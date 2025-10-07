@@ -1,0 +1,34 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition.workspace = true
+
+[lib]
+name = "integration_tests"
+path = "src/lib.rs"
+
+[dependencies]
+bytes = { workspace = true }
+chrono = { workspace = true }
+ntest = { workspace = true }
+pocketscion = { workspace = true }
+quinn = { workspace = true }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
+reqwest-connect-rpc = { workspace = true }
+rustls = { workspace = true }
+scion-proto = { workspace = true }
+scion-stack = { workspace = true }
+snap-control = { workspace = true }
+snap-dataplane = { workspace = true }
+snap-tokens = { workspace = true }
+test-log = { workspace = true }
+test-util = { workspace = true }
+token-validator = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+url = { workspace = true }
+
+[lints]
+workspace = true

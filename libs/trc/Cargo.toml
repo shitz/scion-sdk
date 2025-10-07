@@ -1,0 +1,16 @@
+[package]
+name = "trc"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+cms = { workspace = true }
+der = { workspace = true, features = ["pem", "derive"] }
+scion-proto = { workspace = true }
+thiserror = { workspace = true }
+x509-cert = { workspace = true }
+
+[dev-dependencies]
+
+[lints]
+workspace = true

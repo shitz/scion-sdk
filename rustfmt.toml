@@ -1,0 +1,19 @@
+# Comments Formatting
+comment_width = 100
+wrap_comments = true
+format_code_in_doc_comments = true
+normalize_comments = false # replace `/*comment*/ with `// comment` where possible
+
+# Imports Formatting
+imports_granularity = "Crate" # Groups imports by their source crate
+group_imports = "StdExternalCrate" # Orders imports by STD, External, Internal
+
+# Enum Formatting
+enum_discrim_align_threshold = 4 # Vertical Align enum assignments by up to N characters
+
+# Block and Closure Formatting
+force_multiline_blocks = true # Force multiline closures to be wrapped in a block
+
+# Patterns Formatting
+condense_wildcard_suffixes = true # Replace (a, _, _) = (1,2,3) with (a, ..) = (1,2,3)
+use_field_init_shorthand = true # A{ x: x } becomes A { x }

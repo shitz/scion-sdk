@@ -1,0 +1,34 @@
+[package]
+name = "snap-dataplane"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+bytes = { workspace = true }
+ed25519-dalek = { workspace = true }
+jsonwebtoken = { workspace = true }
+pem = { workspace = true, features = ["serde"] }
+prometheus = { workspace = true }
+quinn = { workspace = true }
+rand = { workspace = true }
+serde = { workspace = true }
+task-handler = { workspace = true }
+test-log = { workspace = true, features = ["trace"] }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+tracing = { workspace = true }
+utoipa = { workspace = true, features = ["yaml", "time"] }
+uuid = { workspace = true, features = ["serde", "v4"] }
+# Local dependencies
+address-manager = { workspace = true }
+common-types = { workspace = true }
+observability = { workspace = true }
+scion-proto = { workspace = true }
+snap-tun = { workspace = true }
+snap-tokens = { workspace = true }
+token-validator = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,12 @@
+# Cargo configuration
+
+[alias]
+# Clippy
+clippy_ci = "clippy --quiet --profile ci --all-features --tests --all-targets -- -D warnings"
+
+# Docs
+doc_ci = "doc --no-deps --all-features --locked"
+doc_dx = "doc --quiet --no-deps --all-features --locked"
+
+# Testing
+test_ci = "test --profile ci --locked -- --nocapture"
