@@ -115,6 +115,11 @@ impl SnapTunnel {
         // 5 secs == 1/6 default idle timeout
         transport_config.keep_alive_interval(Some(Duration::from_secs(5)));
 
+        // XXX: on windows, GSO is known to cause trouble depending on the
+        // combination of network drivers, configuration, etc.
+        #[cfg(target_os = "windows")]
+        transport_config.enable_segmentation_offload(false);
+
         let transport_config_arc = Arc::new(transport_config);
         let mut client_config =
             quinn::ClientConfig::new(Arc::new(QuicClientConfig::try_from(client_crypto).unwrap()));
