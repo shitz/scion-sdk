@@ -18,7 +18,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use common_types::ed25519::Ed25519SigningKeyPem;
 use ed25519_dalek::{
     SigningKey,
     pkcs8::{EncodePrivateKey, EncodePublicKey},
@@ -26,6 +25,7 @@ use ed25519_dalek::{
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
 use pem::Pem;
 use rand::RngCore;
+use scion_sdk_common_types::ed25519::Ed25519SigningKeyPem;
 use serde::{Deserialize, Serialize};
 use snap_tokens::{Pssid, session_token::SessionTokenClaims};
 
@@ -223,9 +223,9 @@ pub fn random_ed25519_signing_key() -> SigningKey {
 mod tests {
     use std::time::{Duration, UNIX_EPOCH};
 
+    use scion_sdk_token_validator::validator::{TokenValidator, Validator};
     use snap_tokens::snap_token::SnapTokenClaims;
     use test_log::test;
-    use token_validator::validator::{TokenValidator, Validator};
     use uuid::Uuid;
 
     use super::*;

@@ -13,7 +13,6 @@ prometheus = { workspace = true }
 quinn = { workspace = true }
 rand = { workspace = true }
 serde = { workspace = true }
-task-handler = { workspace = true }
 test-log = { workspace = true, features = ["trace"] }
 thiserror = { workspace = true }
 tokio = { workspace = true }
@@ -21,14 +20,16 @@ tokio-util = { workspace = true }
 tracing = { workspace = true }
 utoipa = { workspace = true, features = ["yaml", "time"] }
 uuid = { workspace = true, features = ["serde", "v4"] }
+
 # Local dependencies
-address-manager = { workspace = true }
-common-types = { workspace = true }
-observability = { workspace = true }
+scion-sdk-address-manager = { workspace = true }
 scion-proto = { workspace = true }
-snap-tun = { workspace = true }
+scion-sdk-common-types = { workspace = true }
+scion-sdk-observability = { workspace = true }
+scion-sdk-token-validator = { workspace = true }
+scion-sdk-utils = { workspace = true }
 snap-tokens = { workspace = true }
-token-validator = { workspace = true }
+snap-tun = { workspace = true }
 
 [lints]
 workspace = true

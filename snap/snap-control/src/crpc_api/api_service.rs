@@ -16,7 +16,7 @@
 use std::sync::Arc;
 
 use axum::{Extension, Router, extract::State, http::StatusCode};
-use axum_connect_rpc::{error::CrpcError, extractor::ConnectRpc};
+use scion_sdk_axum_connect_rpc::{error::CrpcError, extractor::ConnectRpc};
 use snap_tokens::snap_token::SnapTokenClaims;
 
 use crate::{

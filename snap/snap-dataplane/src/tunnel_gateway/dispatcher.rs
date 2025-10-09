@@ -17,9 +17,9 @@ use std::sync::{Arc, Mutex};
 
 use bytes::Bytes;
 use scion_proto::{address::EndhostAddr, packet::ScionPacketRaw, wire_encoding::WireEncodeVec};
+use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use snap_tun::server::{AddressAssignmentError, SendPacketError};
-use token_validator::validator::Token;
 use tokio::sync::mpsc::{Receiver, Sender, error::TrySendError};
 use tracing::{debug, info, span, trace};
 

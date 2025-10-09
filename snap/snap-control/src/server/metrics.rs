@@ -22,8 +22,8 @@ use std::{
 
 use axum::body::Body;
 use http::{Request, Response};
-use observability::metrics::registry::MetricsRegistry;
 use prometheus::{HistogramVec, IntCounterVec};
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
 use tower::{BoxError, Layer, Service};
 
 /// Prometheus middleware layer for tracking control plane API metrics.

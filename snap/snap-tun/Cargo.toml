@@ -10,21 +10,21 @@ chrono = { workspace = true }
 http = { workspace = true }
 httparse = { workspace = true }
 ipnet = { workspace = true }
-observability = { workspace = true }
 prometheus = { workspace = true }
 prost = { workspace = true }
 quinn = { workspace = true }
 scion-proto = { workspace = true }
+scion-sdk-observability = { workspace = true }
+scion-sdk-token-validator = { workspace = true }
+scion-sdk-utils = { workspace = true }
 serde = { workspace = true }
 snap-tokens = { workspace = true }
 thiserror = { workspace = true }
-token-validator = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
 
 [dev-dependencies]
 test-log = { workspace = true, features = ["trace"] }
-test-util = { workspace = true }
 
 [lints]
 workspace = true

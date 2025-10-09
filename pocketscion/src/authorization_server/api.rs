@@ -17,7 +17,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 
 use axum::{Form, Json, Router, extract::State, response::IntoResponse};
 use http::StatusCode;
-use observability::info_trace_layer;
+use scion_sdk_observability::info_trace_layer;
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
@@ -303,11 +303,11 @@ mod tests {
 
     use axum::Router;
     use jsonwebtoken::DecodingKey;
-    use snap_tokens::snap_token::SnapTokenClaims;
-    use test_log::test;
-    use token_validator::validator::{
+    use scion_sdk_token_validator::validator::{
         TokenValidator, Validator, insecure_const_ed25519_key_pair_pem,
     };
+    use snap_tokens::snap_token::SnapTokenClaims;
+    use test_log::test;
 
     use super::*;
     use crate::{

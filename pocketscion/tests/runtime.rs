@@ -36,7 +36,7 @@ use test_log::test;
 
 #[test(tokio::test)]
 async fn snap_tunnel_simple_echo_test() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let mut pstate = SharedPocketScionState::new(SystemTime::now());
     let io_config = SharedPocketScionIoConfig::new();

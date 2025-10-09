@@ -13,9 +13,9 @@
 // limitations under the License.
 //! Tunnel gateway receiver.
 
+use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use snap_dataplane::{dispatcher::Dispatcher, tunnel_gateway::dispatcher::TunnelGatewayDispatcher};
-use token_validator::validator::Token;
 
 use crate::network::local::receivers::Receiver;
 

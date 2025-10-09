@@ -13,8 +13,8 @@
 // limitations under the License.
 //! Tunnel gateway metrics.
 
-use observability::metrics::registry::MetricsRegistry;
 use prometheus::{IntCounter, IntGauge};
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
 
 /// Tunnel gateway metrics.
 #[derive(Debug, Clone)]

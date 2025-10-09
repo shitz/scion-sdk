@@ -19,7 +19,7 @@ use std::{
     time::{Duration, UNIX_EPOCH},
 };
 
-use common_types::ed25519::Ed25519SigningKeyPem;
+use scion_sdk_common_types::ed25519::Ed25519SigningKeyPem;
 use serde::{Deserialize, Serialize};
 use snap_tokens::Pssid;
 use utoipa::ToSchema;

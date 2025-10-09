@@ -21,8 +21,8 @@ use std::{
 
 use axum::{Json, extract::State, response::IntoResponse};
 use http::StatusCode;
-use observability::info_trace_layer;
 use scion_proto::address::IsdAsn;
+use scion_sdk_observability::info_trace_layer;
 use serde::{Deserialize, Serialize};
 use tower::ServiceBuilder;
 use tracing::error;

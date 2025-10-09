@@ -21,9 +21,13 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use io_util::{get_tmp_path, read_file, write_file};
 use jsonwebtoken::DecodingKey;
-use observability::metrics::registry::MetricsRegistry;
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
+use scion_sdk_token_validator::validator::Validator;
+use scion_sdk_utils::{
+    io::{get_tmp_path, read_file, write_file},
+    task_handler::{CancelTaskSet, InProcess},
+};
 use snap_dataplane::{
     session::state::insecure_const_session_key_pair,
     state::Id,
@@ -32,9 +36,7 @@ use snap_dataplane::{
         start_tunnel_gateway, state::SharedTunnelGatewayState,
     },
 };
-use task_handler::{CancelTaskSet, InProcess};
 use thiserror::Error;
-use token_validator::validator::Validator;
 use tokio::{net::TcpListener, time::sleep};
 use tracing::{debug, info};
 
@@ -207,7 +209,7 @@ impl PocketScionRuntimeBuilder {
 
                 let metrics_registry = MetricsRegistry::new();
 
-                let (_cert_der, server_config) = test_util::generate_cert(
+                let (_cert_der, server_config) = scion_sdk_utils::test::generate_cert(
                     [42u8; 32],
                     vec!["localhost".into()],
                     vec![b"snaptun".to_vec()],

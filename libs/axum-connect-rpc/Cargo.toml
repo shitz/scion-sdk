@@ -1,5 +1,5 @@
 [package]
-name = "axum-connect-rpc"
+name = "scion-sdk-axum-connect-rpc"
 version = "0.1.0"
 edition.workspace = true
 

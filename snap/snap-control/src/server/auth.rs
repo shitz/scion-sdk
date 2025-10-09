@@ -24,9 +24,9 @@ use std::{
 use axum::body::Body;
 use http::{Request, Response};
 use jsonwebtoken::DecodingKey;
+use scion_sdk_token_validator::validator::{TokenValidator, Validator};
 use snap_tokens::snap_token::SnapTokenClaims;
 use thiserror::Error;
-use token_validator::validator::{TokenValidator, Validator};
 use tower::{BoxError, Layer, Service};
 use tracing::debug;
 

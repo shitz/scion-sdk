@@ -5,9 +5,10 @@ edition.workspace = true
 
 [dependencies]
 # Local Dependencies
-address-manager = { workspace = true }
-io-util = { workspace = true }
-token-validator = { workspace = true }
+scion-sdk-address-manager = { workspace = true }
+scion-sdk-observability = { workspace = true }
+scion-sdk-token-validator = { workspace = true }
+scion-sdk-utils = { workspace = true }
 
 scion-stack = { workspace = true }
 scion-proto = { workspace = true }
@@ -30,8 +31,6 @@ chrono = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 derive_more = { workspace = true }
 cmac = { workspace = true }
-observability = { workspace = true }
-task-handler = { workspace = true }
 ed25519-dalek = { workspace = true }
 http = { workspace = true }
 ipnet = { workspace = true, features = ["serde"] }
@@ -46,7 +45,6 @@ serde = { workspace = true }
 serde_with = { workspace = true, features = ["base64"] }
 serde_json = { workspace = true }
 test-log = { workspace = true, features = ["trace"] }
-test-util = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }

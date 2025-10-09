@@ -53,11 +53,11 @@ use endhost_api_models::underlays::Underlays;
 use endhost_api_protobuf::endhost::api_service::v1::{
     ListSegmentsRequest, ListSegmentsResponse, ListUnderlaysRequest, ListUnderlaysResponse,
 };
-use reqwest_connect_rpc::{
+use scion_proto::{address::IsdAsn, path::segment::Segments};
+use scion_sdk_reqwest_connect_rpc::{
     client::{CrpcClient, CrpcClientError},
     token_source::TokenSource,
 };
-use scion_proto::{address::IsdAsn, path::segment::Segments};
 
 /// Endhost API client trait.
 ///

@@ -65,8 +65,8 @@ use ipnet::IpNet;
 use prost::Message;
 use quinn::{RecvStream, SendStream, VarInt};
 use scion_proto::address::{EndhostAddr, IsdAsn};
+use scion_sdk_token_validator::validator::{Token, TokenValidator, TokenValidatorError};
 use serde::Deserialize;
-use token_validator::validator::{Token, TokenValidator, TokenValidatorError};
 use tokio::sync::watch;
 use tracing::{debug, error, info, instrument, warn};
 

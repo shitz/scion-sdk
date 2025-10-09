@@ -21,16 +21,14 @@ endhost-api = { path = "endhost-api/endhost-api" }
 endhost-api-models = { path = "endhost-api/endhost-api-models" }
 endhost-api-protobuf = { path = "endhost-api/endhost-api-protobuf" }
 
-address-manager = { path = "libs/address-manager"}
-axum-connect-rpc = { path = "libs/axum-connect-rpc" }
-common-types = { path = "libs/common-types" }
-io-util = { path = "libs/io-util" }
-observability = { path = "libs/observability" }
-rangeset = { path = "libs/rangeset" }
-reqwest-connect-rpc = { path = "libs/reqwest-connect-rpc" }
-task-handler = { path = "libs/task-handler" }
-test-util = { path = "libs/test-util" }
-token-validator = { path = "libs/token-validator" }
+scion-sdk-address-manager = { path = "libs/address-manager"}
+scion-sdk-axum-connect-rpc = { path = "libs/axum-connect-rpc" }
+scion-sdk-common-types = { path = "libs/common-types" }
+scion-sdk-observability = { path = "libs/observability" }
+scion-sdk-reqwest-connect-rpc = { path = "libs/reqwest-connect-rpc" }
+scion-sdk-token-validator = { path = "libs/token-validator" }
+scion-sdk-utils = { path = "libs/utils" }
+
 
 pocketscion = { path = "pocketscion" }
 

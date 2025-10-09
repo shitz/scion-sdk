@@ -24,8 +24,8 @@ use endhost_api_models::{
 };
 use http::StatusCode;
 use jsonwebtoken::DecodingKey;
-use observability::info_trace_layer;
 use scion_proto::address::IsdAsn;
+use scion_sdk_observability::info_trace_layer;
 use snap_dataplane::session::manager::SessionTokenError;
 use snap_tokens::snap_token::SnapTokenClaims;
 use tokio::net::TcpListener;

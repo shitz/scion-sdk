@@ -35,6 +35,7 @@ use scion_proto::{
     path::{DataPlanePath, encoded::EncodedStandardPath},
     wire_encoding::{WireDecode, WireEncodeVec},
 };
+use scion_sdk_token_validator::validator::insecure_const_ed25519_key_pair_pem;
 use scion_stack::{
     quic::QuinnConn as _,
     scionstack::{ScionStackBuilder, UdpScionSocket, builder::SnapUnderlayConfig},
@@ -43,7 +44,6 @@ use scion_stack::{
 use snap_control::client::{ControlPlaneApi, CrpcSnapControlClient};
 use snap_tokens::snap_token::dummy_snap_token;
 use test_log::test;
-use token_validator::validator::insecure_const_ed25519_key_pair_pem;
 use tokio_util::sync::CancellationToken;
 use tracing::{debug, error, info};
 use url::Url;
@@ -103,7 +103,7 @@ async fn send_and_receive_echo(tun: &SnapTunnel, payload: Bytes) {
 #[test(tokio::test)]
 #[ntest::timeout(10_000)]
 async fn multi_client_multi_snap() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let mut pstate = SharedPocketScionState::new(SystemTime::now());
 
@@ -229,7 +229,7 @@ async fn multi_client_multi_snap() {
 #[ntest::timeout(10_000)]
 async fn quic_on_quic() {
     info!("installing crypto provider");
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let mut pstate = SharedPocketScionState::new(SystemTime::now());
 
@@ -303,7 +303,7 @@ async fn quic_on_quic() {
     let reader_cancellation_token = cancellation_token.clone();
 
     let (cert_der, server_config) =
-        test_util::generate_cert([42u8; 32], vec!["localhost".into()], vec![]);
+        scion_sdk_utils::test::generate_cert([42u8; 32], vec!["localhost".into()], vec![]);
 
     let mut roots = rustls::RootCertStore::empty();
     roots.add(cert_der).unwrap();
@@ -512,7 +512,7 @@ async fn recv_and_check(
 
 #[test(tokio::test)]
 async fn with_auth_server() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let (snap_token_private_pem, snap_token_public_pem) = insecure_const_ed25519_key_pair_pem();
 

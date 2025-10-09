@@ -99,7 +99,7 @@ impl SnapTunnel {
         requested_addresses: Vec<EndhostAddr>,
         auto_session_renewal: Option<SessionRenewal>,
     ) -> Result<Self, SnapTunnelError> {
-        let (cert_der, _config) = test_util::generate_cert(
+        let (cert_der, _config) = scion_sdk_utils::test::generate_cert(
             [42u8; 32],
             vec!["localhost".into()],
             vec![b"snaptun".to_vec()],

@@ -19,10 +19,10 @@ use endhost_api_client::client::{CrpcEndhostApiClient, EndhostApiClient};
 use endhost_api_models::underlays::{ScionRouter, Snap};
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
-// Re-export for consumer
-pub use reqwest_connect_rpc::client::CrpcClientError;
-use reqwest_connect_rpc::token_source::TokenSource;
 use scion_proto::address::{EndhostAddr, IsdAsn};
+// Re-export for consumer
+pub use scion_sdk_reqwest_connect_rpc::client::CrpcClientError;
+use scion_sdk_reqwest_connect_rpc::token_source::TokenSource;
 use snap_control::client::{ControlPlaneApi, CrpcSnapControlClient};
 use tracing::info;
 use url::Url;

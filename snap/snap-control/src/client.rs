@@ -17,7 +17,7 @@ use std::{net::SocketAddr, ops::Deref, sync::Arc};
 
 use async_trait::async_trait;
 use endhost_api_client::client::CrpcEndhostApiClient;
-use reqwest_connect_rpc::{client::CrpcClientError, token_source::TokenSource};
+use scion_sdk_reqwest_connect_rpc::{client::CrpcClientError, token_source::TokenSource};
 use url::Url;
 
 use crate::{
@@ -34,7 +34,7 @@ use crate::{
 /// Re-export the endhost API client and the reqwest connect RPC cllient.
 pub mod re_export {
     pub use endhost_api_client::client::{CrpcEndhostApiClient, EndhostApiClient};
-    pub use reqwest_connect_rpc::{client::CrpcClientError, token_source::*};
+    pub use scion_sdk_reqwest_connect_rpc::{client::CrpcClientError, token_source::*};
 }
 
 /// SNAP control plane API trait.

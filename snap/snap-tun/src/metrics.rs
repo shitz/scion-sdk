@@ -13,8 +13,8 @@
 // limitations under the License.
 //! SNAP tunnel metrics.
 
-use observability::metrics::registry::MetricsRegistry;
 use prometheus::IntCounter;
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
 
 /// SNAP tunnel metrics.
 pub struct Metrics {

@@ -15,11 +15,11 @@
 
 use std::sync::Arc;
 
-use observability::metrics::registry::MetricsRegistry;
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
+use scion_sdk_token_validator::validator::{Token, TokenValidator};
+use scion_sdk_utils::task_handler::CancelTaskSet;
 use serde::Deserialize;
 use snap_tun::AddressAllocator;
-use task_handler::CancelTaskSet;
-use token_validator::validator::{Token, TokenValidator};
 
 use crate::{
     dispatcher::Dispatcher,

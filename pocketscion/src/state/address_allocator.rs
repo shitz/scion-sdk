@@ -18,11 +18,11 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use address_manager::manager::AddressManager;
 use ipnet::IpNet;
 use scion_proto::address::{EndhostAddr, IsdAsn};
+use scion_sdk_address_manager::manager::AddressManager;
+use scion_sdk_token_validator::validator::Token;
 use snap_tokens::session_token::SessionTokenClaims;
-use token_validator::validator::Token;
 
 use crate::state::{AllocationError, SharedPocketScionState, SnapDataPlaneId, SystemState};
 

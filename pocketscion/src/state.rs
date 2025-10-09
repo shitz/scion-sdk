@@ -23,13 +23,14 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use address_manager::manager::{AddressManager, AddressRegistrationError};
 use anyhow::Context as _;
 use derive_more::Display;
 use ipnet::IpNet;
 use pem::Pem;
 use rand_chacha::ChaCha8Rng;
 use scion_proto::address::IsdAsn;
+use scion_sdk_address_manager::manager::{AddressManager, AddressRegistrationError};
+use scion_sdk_token_validator::validator::insecure_const_ed25519_key_pair_pem;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use snap_control::{
     crpc_api::api_service::model::SessionGrant,
@@ -43,7 +44,6 @@ use snap_dataplane::{
     state::{DataPlaneId, DataPlaneState, Id},
 };
 use snap_tokens::snap_token::SnapTokenClaims;
-use token_validator::validator::insecure_const_ed25519_key_pair_pem;
 use utoipa::ToSchema;
 
 use crate::{
@@ -705,10 +705,10 @@ impl From<AllocationError> for snap_tun::AddressAllocationError {
                         snap_tun::AddressAllocationError::IaNotInAllocationRange(requested_ia, ia)
                     }
                     AddressRegistrationError::AddressAllocatorError(
-                        address_manager::allocator::AddressAllocatorError::NoAddressesAvailable,
+                        scion_sdk_address_manager::allocator::AddressAllocatorError::NoAddressesAvailable,
                     ) => snap_tun::AddressAllocationError::NoAddressesAvailable,
                     AddressRegistrationError::AddressAllocatorError(
-                        address_manager::allocator::AddressAllocatorError::AddressNotInPrefix(addr),
+                        scion_sdk_address_manager::allocator::AddressAllocatorError::AddressNotInPrefix(addr),
                     ) => snap_tun::AddressAllocationError::AddressNotInAllocationRange(addr),
                     _ => snap_tun::AddressAllocationError::AddressAllocationRejected,
                 }

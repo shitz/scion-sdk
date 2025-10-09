@@ -20,8 +20,8 @@ use std::{
 
 use rand::Rng as _;
 use rand_chacha::ChaCha8Rng;
-use rangeset::{Range, RangeSet, RemoveError};
 use scion_proto::address::EndhostAddr;
+use scion_sdk_utils::rangeset::{Range, RangeSet, RemoveError};
 
 #[derive(Debug, thiserror::Error)]
 pub enum PortAllocatorError {

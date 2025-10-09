@@ -27,8 +27,8 @@ use scion_proto::{
     scmp::{ParameterProblemCode, ScmpMessage, ScmpParameterProblem},
     wire_encoding::WireEncodeVec,
 };
+use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
-use token_validator::validator::Token;
 use tokio_util::sync::CancellationToken;
 use tracing::{Instrument, debug, error, info, instrument};
 

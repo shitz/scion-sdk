@@ -19,7 +19,7 @@ use std::{
 };
 
 use ipnet::IpNet;
-use rangeset::{Range, RangeSet};
+use scion_sdk_utils::rangeset::{Range, RangeSet};
 use thiserror::Error;
 
 /// A set of IP addresses.

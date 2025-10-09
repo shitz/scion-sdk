@@ -16,8 +16,8 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header};
+use scion_sdk_token_validator::validator::{Token, insecure_const_ed25519_key_pair_pem};
 use serde::{Deserialize, Serialize};
-use token_validator::validator::{Token, insecure_const_ed25519_key_pair_pem};
 use uuid::Uuid;
 
 use crate::Pssid;
@@ -135,8 +135,8 @@ pub fn insecure_const_snap_token_key_pair() -> (EncodingKey, DecodingKey) {
 #[cfg(test)]
 mod tests {
     use jsonwebtoken::{Algorithm, Header, encode};
+    use scion_sdk_token_validator::validator::{TokenValidator, TokenValidatorError, Validator};
     use test_log::test;
-    use token_validator::validator::{TokenValidator, TokenValidatorError, Validator};
 
     use super::*;
 

@@ -14,11 +14,11 @@
 //! Integration tests for error SCION stack error handling.
 
 use integration_tests::{UnderlayType, minimal_pocketscion_setup};
-use reqwest_connect_rpc::{
+use scion_proto::address::{ScionAddrSvc, ServiceAddr, SocketAddr};
+use scion_sdk_reqwest_connect_rpc::{
     client::CrpcClientError,
     error::{CrpcError, CrpcErrorCode},
 };
-use scion_proto::address::{ScionAddrSvc, ServiceAddr, SocketAddr};
 use scion_stack::scionstack::{
     ScionSocketBindError, ScionStackBuilder,
     builder::{BuildScionStackError, BuildSnapScionStackError},

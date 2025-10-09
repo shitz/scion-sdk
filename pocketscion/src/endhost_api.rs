@@ -26,8 +26,8 @@ use endhost_api_models::{
     UnderlayDiscovery,
     underlays::{ScionRouter, Snap, Underlays},
 };
-use observability::info_trace_layer;
 use scion_proto::address::IsdAsn;
+use scion_sdk_observability::info_trace_layer;
 use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use utoipa::ToSchema;

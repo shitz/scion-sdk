@@ -15,8 +15,8 @@
 
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use scion_sdk_token_validator::validator::Token;
 use serde::{Deserialize, Serialize};
-use token_validator::validator::Token;
 
 use crate::Pssid;
 

@@ -22,10 +22,11 @@ use std::{
 use assert_matches::assert_matches;
 use bytes::Bytes;
 use ipnet::IpNet;
-use observability::metrics::registry::MetricsRegistry;
 use quinn::{Endpoint, TransportConfig, crypto::rustls::QuicClientConfig, rustls};
 use rustls::ClientConfig;
 use scion_proto::address::{Asn, EndhostAddr, Isd, IsdAsn};
+use scion_sdk_observability::metrics::registry::MetricsRegistry;
+use scion_sdk_token_validator::validator::{Token, TokenValidator, TokenValidatorError};
 use serde::{Deserialize, Serialize};
 use snap_tun::{
     AddressAllocation, AddressAllocationError, AddressAllocationId, AddressAllocator,
@@ -36,7 +37,6 @@ use snap_tun::{
     metrics::Metrics,
     server::ControlError,
 };
-use token_validator::validator::{Token, TokenValidator, TokenValidatorError};
 use tokio::task::JoinSet;
 
 const DESIRED_IPV4_ADDR: EndhostAddr = EndhostAddr::new(
@@ -51,7 +51,7 @@ const DESIRED_IPV6_ADDR: EndhostAddr = EndhostAddr::new(
 /// Test address assignments by checking that sent packets are echoed back.
 #[test_log::test(tokio::test)]
 pub async fn assign_address_and_retrieve_echoed_packet() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let (quic_client, quic_srv) = quic_endpoint_pair();
     let srv_addr = quic_srv.local_addr().expect("no fail");
@@ -82,7 +82,7 @@ pub async fn assign_address_and_retrieve_echoed_packet() {
 /// Test session enforcement by using a short token validity.
 #[test_log::test(tokio::test)]
 pub async fn session_enforcement() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let (quic_client, quic_srv) = quic_endpoint_pair();
     let srv_addr = quic_srv.local_addr().expect("no fail");
@@ -108,7 +108,7 @@ pub async fn session_enforcement() {
 /// Test manual session renewal.
 #[test_log::test(tokio::test)]
 pub async fn session_renewal() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let (quic_client, quic_srv) = quic_endpoint_pair();
     let srv_addr = quic_srv.local_addr().expect("no fail");
@@ -138,7 +138,7 @@ pub async fn session_renewal() {
 /// Test automatic session renewal.
 #[test_log::test(tokio::test)]
 pub async fn auto_session_renewal() {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let (quic_client, quic_srv) = quic_endpoint_pair();
     let srv_addr = quic_srv.local_addr().expect("no fail");
@@ -229,7 +229,7 @@ async fn run_server(ep: Endpoint, srv: snap_tun::server::Server<DummyToken>) {
 }
 
 fn quic_endpoint_pair() -> (quinn::Endpoint, quinn::Endpoint) {
-    let (_cert, config) = test_util::generate_cert(
+    let (_cert, config) = scion_sdk_utils::test::generate_cert(
         [42u8; 32],
         vec!["localhost".into()],
         vec![b"snaptun".to_vec()],
@@ -244,7 +244,7 @@ fn quic_endpoint_pair() -> (quinn::Endpoint, quinn::Endpoint) {
 }
 
 fn client_config() -> quinn::ClientConfig {
-    let (cert_der, _config) = test_util::generate_cert(
+    let (cert_der, _config) = scion_sdk_utils::test::generate_cert(
         [42u8; 32],
         vec!["localhost".into()],
         vec![b"snaptun".to_vec()],

@@ -15,7 +15,7 @@
 use anyhow::Context;
 use rand::SeedableRng;
 use rand_chacha::{ChaCha8Core, ChaCha8Rng};
-use rangeset::{Range, RangeSet};
+use scion_sdk_utils::rangeset::{Range, RangeSet};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

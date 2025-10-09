@@ -15,9 +15,9 @@
 
 use std::{collections::BTreeMap, fmt};
 
-use address_manager::manager::AddressManager;
 use anyhow::Context as _;
 use scion_proto::address::IsdAsn;
+use scion_sdk_address_manager::manager::AddressManager;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 

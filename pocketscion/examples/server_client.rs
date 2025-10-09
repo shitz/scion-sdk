@@ -58,13 +58,13 @@ use quinn::{EndpointConfig, crypto::rustls::QuicClientConfig, rustls::RootCertSt
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use scion_proto::address::IsdAsn;
+use scion_sdk_utils::test::install_rustls_crypto_provider;
 use scion_stack::{
     quic::{QuinnConn, ScionQuinnConn},
     scionstack::ScionStackBuilder,
 };
 use serde::{Deserialize, Serialize};
 use snap_tokens::snap_token::dummy_snap_token;
-use test_util::install_rustls_crypto_provider;
 use tokio::{select, time::interval, try_join};
 use tracing::{Instrument, info_span, level_filters::LevelFilter};
 use url::Url;
@@ -183,7 +183,7 @@ async fn main() -> Result<(), anyhow::Error> {
 
         // Generate simple QUICK server config
         let (server_certificate, server_config) =
-            test_util::generate_cert([42u8; 32], vec!["localhost".into()], vec![]);
+            scion_sdk_utils::test::generate_cert([42u8; 32], vec!["localhost".into()], vec![]);
 
         // Since we did not request a specific address, the SNAP will assign one
         let server_addr = server_network_stack

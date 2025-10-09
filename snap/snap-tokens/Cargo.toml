@@ -8,7 +8,7 @@ jsonwebtoken = { workspace = true }
 pem = { workspace = true }
 serde = { workspace = true }
 test-log = { workspace = true, features = ["trace"] }
-token-validator = { workspace = true }
+scion-sdk-token-validator = { workspace = true }
 uuid = { workspace = true, features = ["serde", "v4", "v5"] }
 
 [lints]

@@ -55,7 +55,7 @@ pub struct PocketscionTestEnv {
 
 /// Sets up PocketSCION with two SNAPs in different ASes for testing.
 pub async fn minimal_pocketscion_setup(underlay: UnderlayType) -> PocketscionTestEnv {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let mut pstate = SharedPocketScionState::new(SystemTime::now());
 
@@ -129,7 +129,7 @@ pub async fn minimal_pocketscion_setup(underlay: UnderlayType) -> PocketscionTes
 pub async fn single_snap_pocketscion_setup(
     session_validity: Duration,
 ) -> (PocketScionRuntime, Url) {
-    test_util::install_rustls_crypto_provider();
+    scion_sdk_utils::test::install_rustls_crypto_provider();
 
     let mut pstate = SharedPocketScionState::new(SystemTime::now());
 

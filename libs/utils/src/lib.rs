@@ -11,15 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//! Data transfer objects (DTOs) for the SNAP data plane.
+//! Shared utilities for the SCION SDK.
 
-use scion_sdk_address_manager::manager::dto::AddressManagerDto;
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-
-/// The SNAP data plane state.
-#[derive(Debug, Serialize, Deserialize, ToSchema, Clone)]
-pub struct DataPlaneStateDto {
-    /// The address registries (per ISD AS) of the data plane.
-    pub address_registries: Vec<AddressManagerDto>,
-}
+pub mod io;
+pub mod rangeset;
+pub mod task_handler;
+pub mod test;
