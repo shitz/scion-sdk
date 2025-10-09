@@ -3,6 +3,7 @@
   pkgs,
   rootDir,
   extraPackages ? [],
+  extraRustcLibs ? [],
   ...
 }: let
   # Fetch the rust version from rust-toolchain.toml
@@ -37,9 +38,9 @@ in
     RUSTC_VERSION = rustVersion;
 
     # Precompiled libraries for rustc
-    RUSTC_SEARCH_LIBS = with pkgs; [];
+    RUSTC_SEARCH_LIBS = with pkgs; [] ++ extraRustcLibs;
     # Add precompiled libraries to rustc's search path
-    RUSTFLAGS = builtins.map (lib: ''-L ${lib}/lib'') RUSTC_SEARCH_LIBS;
+    RUSTFLAGS = builtins.map (search_lib: ''-L ${search_lib}/lib'') RUSTC_SEARCH_LIBS;
 
     ### Add Rust to Path
     shellHook = ''
