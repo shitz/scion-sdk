@@ -30,7 +30,7 @@ pub mod drkey {
     pub mod v1 {
         //! Version 1 DRKey types.
 
-        tonic::include_proto!("proto.drkey.v1");
+        include!("proto/proto.drkey.v1.rs");
     }
 }
 
@@ -43,7 +43,7 @@ pub mod daemon {
         //! The primary entry point is the [daemon_service_client::DaemonServiceClient] that
         //! enables an application to query its local sciond service.
 
-        tonic::include_proto!("proto.daemon.v1");
+        include!("proto/proto.daemon.v1.rs");
     }
     pub use v1::daemon_service_client::DaemonServiceClient;
 }
@@ -54,13 +54,13 @@ pub mod control_plane {
     pub mod experimental {
         /// Version 1 experimental control plane types and services.
         pub mod v1 {
-            tonic::include_proto!("proto.control_plane.experimental.v1");
+            include!("proto/proto.control_plane.experimental.v1.rs");
         }
     }
 
     /// Version 1 control plane types and services.
     pub mod v1 {
-        tonic::include_proto!("proto.control_plane.v1");
+        include!("proto/proto.control_plane.v1.rs");
     }
     pub use v1::segment_lookup_service_client::SegmentLookupServiceClient;
 }
@@ -69,6 +69,6 @@ pub mod control_plane {
 pub mod crypto {
     /// Version 1 crypto types and services.
     pub mod v1 {
-        tonic::include_proto!("proto.crypto.v1");
+        include!("proto/proto.crypto.v1.rs");
     }
 }

@@ -108,6 +108,9 @@ jobs:
             CARGO_HOME,{{ DEV_DRIVE }}/.cargo
             RUSTUP_HOME,{{ DEV_DRIVE }}/.rustup
             CARGO_TARGET_DIR,{{ DEV_DRIVE }}/target
+      - name: Check generated protobuf files are up to date
+        if: runner.os == 'Linux'
+        run: cargo run -p proto-gen -- check
       - name: Install rustfmt
         if: runner.os == 'Linux'
         run: rustup toolchain install ${NIGHTLY_VERSION} --component rustfmt

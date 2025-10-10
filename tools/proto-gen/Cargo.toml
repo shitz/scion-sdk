@@ -1,0 +1,19 @@
+[package]
+name = "proto-gen"
+version = "0.1.0"
+edition.workspace = true
+publish = false
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+prost-build = { workspace = true }
+tempfile = { workspace = true }
+tonic-build = { workspace = true }
+walkdir = { workspace = true }
+
+[lints]
+workspace = true
+
+[package.metadata.release]
+publish = false
