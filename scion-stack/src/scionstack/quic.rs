@@ -17,10 +17,12 @@ use std::{
     collections::HashMap,
     fmt::{self, Debug},
     hash::{BuildHasher, Hash as _, Hasher as _},
+    io::ErrorKind,
     net::{IpAddr, Ipv6Addr},
     pin::Pin,
     sync::{Arc, Mutex},
     task::{Poll, ready},
+    time::{Duration, Instant},
 };
 
 use bytes::BufMut as _;
@@ -37,6 +39,9 @@ use crate::{
     path::manager::{PathPrefetcher, SyncPathManager},
     quic::ScionQuinnConn,
 };
+
+/// Log at most 1 IO error every 3 seconds.
+const IO_ERROR_LOG_INTERVAL: Duration = Duration::from_secs(3);
 
 /// A wrapper around a quinn::Endpoint that translates between SCION and ip:port addresses.
 ///
@@ -224,6 +229,10 @@ pub(crate) struct ScionAsyncUdpSocket {
     socket: Arc<dyn AsyncUdpUnderlaySocket>,
     path_manager: Arc<dyn SyncPathManager + Send + Sync>,
     address_translator: Arc<AddressTranslator>,
+    /// The last time a poll_recv error was logged.
+    last_recv_error: Mutex<Instant>,
+    /// The last time a try_send error was logged.
+    last_send_error: Mutex<Instant>,
 }
 
 impl ScionAsyncUdpSocket {
@@ -232,10 +241,14 @@ impl ScionAsyncUdpSocket {
         path_manager: Arc<dyn SyncPathManager + Send + Sync>,
         address_translator: Arc<AddressTranslator>,
     ) -> Self {
+        let now = Instant::now();
+        let instant = now.checked_sub(2 * IO_ERROR_LOG_INTERVAL).unwrap_or(now);
         Self {
             socket,
             path_manager,
             address_translator,
+            last_recv_error: Mutex::new(instant),
+            last_send_error: Mutex::new(instant),
         }
     }
 }
@@ -316,7 +329,20 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
             buf,
         )
         .map_err(|_| std::io::Error::other("failed to encode packet"))?;
-        self.socket.try_send(packet.into())
+
+        match self.socket.try_send(packet.into()) {
+            Ok(_) => Ok(()),
+            Err(e) if e.kind() == ErrorKind::WouldBlock => Err(e),
+            Err(e) => {
+                // XXX: We only log the error such that the quinn connection driver doesn't quit.
+                log_error(
+                    &self.last_send_error,
+                    "Failed to send on the underlying socket",
+                    e,
+                );
+                Ok(())
+            }
+        }
     }
 
     fn poll_recv(
@@ -357,7 +383,17 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
 
                 Poll::Ready(Ok(1))
             }
-            Err(e) => std::task::Poll::Ready(Err(e)),
+            Err(e) if e.kind() == ErrorKind::WouldBlock => Poll::Ready(Err(e)),
+            Err(e) => {
+                // XXX: We only log the error such that the endpoint driver doesn't quit.
+                log_error(
+                    &self.last_recv_error,
+                    "Failed to receive on the underlying socket",
+                    e,
+                );
+
+                Poll::Pending
+            }
         }
     }
 
@@ -367,5 +403,19 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
                 .register_scion_address(self.socket.local_addr().scion_address()),
             self.socket.local_addr().port(),
         ))
+    }
+}
+
+/// Logs a warning message when an error occurs.
+///
+/// Logging will only be performed if at least [`IO_ERROR_LOG_INTERVAL`]
+/// has elapsed since the last error was logged.
+// Inspired by quinn's `log_sendmsg_error`.
+fn log_error(last_send_error: &Mutex<Instant>, msg: &str, err: impl core::fmt::Debug) {
+    let now = Instant::now();
+    let last_send_error = &mut *last_send_error.lock().expect("poisoned lock");
+    if now.saturating_duration_since(*last_send_error) > IO_ERROR_LOG_INTERVAL {
+        *last_send_error = now;
+        tracing::warn!("{}: {:?}", msg, err);
     }
 }
