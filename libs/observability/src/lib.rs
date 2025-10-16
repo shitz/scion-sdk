@@ -33,6 +33,7 @@ use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{EnvFilter, Registry, fmt::time::UtcTime, prelude::*};
 
 pub mod metrics;
+pub mod prometheus_json;
 
 /// Environment variable to define the log level.
 pub const LOG_LEVEL_ENV: &str = "RUST_LOG";

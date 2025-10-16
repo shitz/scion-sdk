@@ -14,9 +14,11 @@
 //! Prometheus metric registry.
 
 use prometheus::{
-    Gauge, GaugeVec, Histogram, HistogramOpts, HistogramVec, IntCounter, IntCounterVec, IntGauge,
-    IntGaugeVec, Opts, core::Collector,
+    Encoder, Gauge, GaugeVec, Histogram, HistogramOpts, HistogramVec, IntCounter, IntCounterVec,
+    IntGauge, IntGaugeVec, Opts, core::Collector,
 };
+
+use crate::prometheus_json::PrometheusJsonEncoder;
 
 /// Register and collect metrics of one or more components.
 ///
@@ -124,6 +126,15 @@ impl MetricsRegistry {
 
     pub(crate) fn registry(&self) -> &prometheus::Registry {
         &self.registry
+    }
+
+    /// Gather metrics and encode them in JSON format.
+    pub fn gather_json(&self, pretty: bool) -> Result<String, Box<dyn std::error::Error>> {
+        let metric_families = self.registry.gather();
+        let encoder = PrometheusJsonEncoder::new(pretty);
+        let mut buffer = Vec::new();
+        encoder.encode(&metric_families, &mut buffer)?;
+        Ok(String::from_utf8(buffer)?)
     }
 
     fn register_collector<C: 'static + Collector + Clone>(&self, c: C) -> C {
