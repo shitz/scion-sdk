@@ -14,51 +14,51 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/scionproto/scion/pkg/proto/crypto";
-
 package proto.crypto.v1;
 
 import "google/protobuf/timestamp.proto";
 
+option go_package = "github.com/scionproto/scion/pkg/proto/crypto";
+
 enum SignatureAlgorithm {
-    // Unspecified signature algorithm. This value is never valid.
-    SIGNATURE_ALGORITHM_UNSPECIFIED = 0;
-    // ECDS with SHA256.
-    SIGNATURE_ALGORITHM_ECDSA_WITH_SHA256 = 1;
-    // ECDS with SHA384.
-    SIGNATURE_ALGORITHM_ECDSA_WITH_SHA384 = 2;
-    // ECDS with SHA512.
-    SIGNATURE_ALGORITHM_ECDSA_WITH_SHA512 = 3;
+  // Unspecified signature algorithm. This value is never valid.
+  SIGNATURE_ALGORITHM_UNSPECIFIED = 0;
+  // ECDS with SHA256.
+  SIGNATURE_ALGORITHM_ECDSA_WITH_SHA256 = 1;
+  // ECDS with SHA384.
+  SIGNATURE_ALGORITHM_ECDSA_WITH_SHA384 = 2;
+  // ECDS with SHA512.
+  SIGNATURE_ALGORITHM_ECDSA_WITH_SHA512 = 3;
 }
 
 message SignedMessage {
-    // Encoded header and body.
-    bytes header_and_body = 1;
-    // Raw signature. The signature is computed over the concatenation of the
-    // header and body, and the optional associated data.
-    bytes signature = 2;
+  // Encoded header and body.
+  bytes header_and_body = 1;
+  // Raw signature. The signature is computed over the concatenation of the
+  // header and body, and the optional associated data.
+  bytes signature = 2;
 }
 
 message Header {
-    // Algorithm used to compute the signature.
-    SignatureAlgorithm signature_algorithm = 1;
-    // Optional arbitrary per-protocol key identifier.
-    bytes verification_key_id = 2;
-    // Optional signature creation timestamp.
-    google.protobuf.Timestamp timestamp = 3;
-    // Optional arbitrary per-protocol metadata.
-    bytes metadata = 4;
-    // Length of associated data that is covered by the signature, but is not
-    // included in the header and body. This is zero, if no associated data is
-    // covered by the signature.
-    int32 associated_data_length = 5;
+  // Algorithm used to compute the signature.
+  SignatureAlgorithm signature_algorithm = 1;
+  // Optional arbitrary per-protocol key identifier.
+  bytes verification_key_id = 2;
+  // Optional signature creation timestamp.
+  google.protobuf.Timestamp timestamp = 3;
+  // Optional arbitrary per-protocol metadata.
+  bytes metadata = 4;
+  // Length of associated data that is covered by the signature, but is not
+  // included in the header and body. This is zero, if no associated data is
+  // covered by the signature.
+  int32 associated_data_length = 5;
 }
 
 // Low-level representation of HeaderAndBody used for signature computation
 // input. This should not be used by external code.
 message HeaderAndBodyInternal {
-    // Enocded header suitable for signature computation.
-    bytes header = 1;
-    // Raw payload suitable for signature computation.
-    bytes body = 2;
+  // Enocded header suitable for signature computation.
+  bytes header = 1;
+  // Raw payload suitable for signature computation.
+  bytes body = 2;
 }

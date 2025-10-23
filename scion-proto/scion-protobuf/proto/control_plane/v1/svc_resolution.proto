@@ -14,9 +14,9 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/scionproto/scion/pkg/proto/control_plane";
-
 package proto.control_plane.v1;
+
+option go_package = "github.com/scionproto/scion/pkg/proto/control_plane";
 
 // A ServiceResolutionRequest must always fit within a UDP datagram. If the
 // request does not fit, there is no mechanism for clients and servers to
@@ -27,23 +27,23 @@ message ServiceResolutionRequest {}
 // response does not fit, there is no mechanism for clients and servers to
 // establish control-plane reachability.
 message ServiceResolutionResponse {
-    // Supported transports to reach the service,
-    //
-    // List of known transports:
-    // - QUIC
-    //
-    // Unknown values should be ignored by clients.
-    map<string, Transport> transports = 1;
+  // Supported transports to reach the service,
+  //
+  // List of known transports:
+  // - QUIC
+  //
+  // Unknown values should be ignored by clients.
+  map<string, Transport> transports = 1;
 }
 
 message Transport {
-    // Protocol specific server address descriptor.
-    //
-    // Supported address format for QUIC:
-    //  192.168.0.1:80
-    //  [2001:db8::1]:80
-    //
-    //  Missing ports / zero port / invalid port values should be treated by
-    //  clients as errors.
-    string address = 1;
+  // Protocol specific server address descriptor.
+  //
+  // Supported address format for QUIC:
+  //  192.168.0.1:80
+  //  [2001:db8::1]:80
+  //
+  //  Missing ports / zero port / invalid port values should be treated by
+  //  clients as errors.
+  string address = 1;
 }

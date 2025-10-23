@@ -14,44 +14,44 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/scionproto/scion/pkg/proto/control_plane";
-
 package proto.control_plane.v1;
 
 import "proto/control_plane/v1/cppki.proto";
 import "proto/crypto/v1/signed.proto";
 
+option go_package = "github.com/scionproto/scion/pkg/proto/control_plane";
+
 service ChainRenewalService {
-    // RenewChain creates a chain from the chain request.
-    rpc ChainRenewal(ChainRenewalRequest) returns (ChainRenewalResponse) {}
+  // RenewChain creates a chain from the chain request.
+  rpc ChainRenewal(ChainRenewalRequest) returns (ChainRenewalResponse) {}
 }
 
 message ChainRenewalRequest {
-    // The signed certificate chain renewal requests. The body of the
-    // SignedMessage is the serialized ChainRenewalRequestBody.
-    proto.crypto.v1.SignedMessage signed_request = 1;
-    // The certificate signing request. The content is an ASN.1 DER
-    // encoded CMS SignedData structure that contains an ASN.1 DER
-    // encoded PKCS #10 request.
-    bytes cms_signed_request = 2;
+  // The signed certificate chain renewal requests. The body of the
+  // SignedMessage is the serialized ChainRenewalRequestBody.
+  proto.crypto.v1.SignedMessage signed_request = 1;
+  // The certificate signing request. The content is an ASN.1 DER
+  // encoded CMS SignedData structure that contains an ASN.1 DER
+  // encoded PKCS #10 request.
+  bytes cms_signed_request = 2;
 }
 
 message ChainRenewalRequestBody {
-    // The raw certificate signature request (PKCS #10).
-    bytes csr = 1;
+  // The raw certificate signature request (PKCS #10).
+  bytes csr = 1;
 }
 
 message ChainRenewalResponse {
-    // The signed certificate chain renewal response. The body of the
-    // SignedMessage is the serialized ChainRenewalResponseBody.
-    proto.crypto.v1.SignedMessage signed_response = 1;
-    // The renewed certificate chain. The content is an ASN.1 DER
-    // encoded CMS SignedData structure that contains the certificate chain.
-    // The chain is the concatenation of the ASN.1 DER encoded certificates.
-    bytes cms_signed_response = 2;
+  // The signed certificate chain renewal response. The body of the
+  // SignedMessage is the serialized ChainRenewalResponseBody.
+  proto.crypto.v1.SignedMessage signed_response = 1;
+  // The renewed certificate chain. The content is an ASN.1 DER
+  // encoded CMS SignedData structure that contains the certificate chain.
+  // The chain is the concatenation of the ASN.1 DER encoded certificates.
+  bytes cms_signed_response = 2;
 }
 
 message ChainRenewalResponseBody {
-    // The renewed certificate chain.
-    proto.control_plane.v1.Chain chain = 1;
+  // The renewed certificate chain.
+  proto.control_plane.v1.Chain chain = 1;
 }

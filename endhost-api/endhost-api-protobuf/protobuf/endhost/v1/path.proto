@@ -32,15 +32,15 @@ message ListSegmentsRequest {
 // ListSegmentsReponse includes up, down, and core path segments that
 // can be combined to end-to-end paths.
 message ListSegmentsResponse {
-    // The list of returned up path segments.
-    repeated proto.control_plane.v1.PathSegment up_segments = 1;
+  // The list of returned up path segments.
+  repeated proto.control_plane.v1.PathSegment up_segments = 1;
 
-    // The list of returned down path segments.
-    repeated proto.control_plane.v1.PathSegment down_segments = 2;
+  // The list of returned down path segments.
+  repeated proto.control_plane.v1.PathSegment down_segments = 2;
 
-    // The list of returned core path segments.
-    repeated proto.control_plane.v1.PathSegment core_segments = 3;
+  // The list of returned core path segments.
+  repeated proto.control_plane.v1.PathSegment core_segments = 3;
 
-    // The token for the next page of results.
-    string next_page_token = 4;
+  // The token for the next page of results.
+  string next_page_token = 4;
 }

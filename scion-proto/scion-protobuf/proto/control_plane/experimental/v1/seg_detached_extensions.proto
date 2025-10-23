@@ -14,13 +14,13 @@
 
 syntax = "proto3";
 
-option go_package = "github.com/scionproto/scion/pkg/proto/control_plane/experimental";
-
 package proto.control_plane.experimental.v1;
 
+option go_package = "github.com/scionproto/scion/pkg/proto/control_plane/experimental";
+
 message EPICDetachedExtension {
-    // Remaining bytes of the full MAC in the hop entry.
-    bytes auth_hop_entry = 1;
-    // Remaining bytes of the full MAC in the peer entries.
-    repeated bytes auth_peer_entries = 2;
+  // Remaining bytes of the full MAC in the hop entry.
+  bytes auth_hop_entry = 1;
+  // Remaining bytes of the full MAC in the peer entries.
+  repeated bytes auth_peer_entries = 2;
 }

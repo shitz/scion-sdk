@@ -20,7 +20,6 @@ message SnapDataPlaneSessionGrant {
 // ############################################
 // CreateSnapDataPlaneSession
 
-
 // Requests creation of a SNAP data plane session grant.
 //
 // Selects one or more SNAP data planes for the client and returns grants for them.
@@ -33,7 +32,6 @@ message GetSnapDataPlaneSessionGrantResponse {
   // Tokens for the created SNAP data plane sessions.
   repeated SnapDataPlaneSessionGrant grants = 1;
 }
-
 
 // ############################################
 // RenewDataPlaneSession
