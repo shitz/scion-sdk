@@ -152,7 +152,7 @@ impl<B> MakeSpan<B> for RandomSpans {
 fn extract_exec_name() -> String {
     let exec_path = std::env::current_exe().expect("Failed to get the current executable path");
     exec_path
-        .file_name()
+        .file_stem()
         .and_then(|name| name.to_str())
         .map(|name| name.to_string())
         .expect("Failed to extract program name")
