@@ -68,7 +68,6 @@ use scion_proto::address::{EndhostAddr, IsdAsn};
 use scion_sdk_token_validator::validator::{Token, TokenValidator, TokenValidatorError};
 use serde::Deserialize;
 use tokio::sync::watch;
-use tracing::{debug, error, info, instrument, warn};
 
 use crate::{
     AUTH_HEADER, AddressAllocation, AddressAllocator, IPV4_WILDCARD, IPV6_WILDCARD,
@@ -187,7 +186,6 @@ impl<T: SnapTunToken> Server<T> {
     ///
     /// The client is expected to first send a session renew request, followed by an address
     /// assignment request.
-    #[instrument(name = "SnapTunServer::accept", skip_all, fields(conn_id = conn.stable_id()))]
     async fn accept(
         &self,
         conn: quinn::Connection,
@@ -199,7 +197,7 @@ impl<T: SnapTunToken> Server<T> {
 
         //
         // First request MUST be a session renew request.
-        let (address_assign_request, mut snd, _rcv) = receive_expected_control_request(
+        let (session_renew_req, mut snd, _rcv) = receive_expected_control_request(
             &conn,
             |r| matches!(r, ControlRequest::SessionRenewal(_)),
             b"expected session renewal request",
@@ -207,9 +205,9 @@ impl<T: SnapTunToken> Server<T> {
         .await?;
 
         let now = SystemTime::now();
-        debug!(?now, request=?address_assign_request, "Process expected session renewal request");
+        tracing::debug!(?now, request=?session_renew_req, "Got session renewal request");
 
-        let (code, body) = state_machine.process_control_request(now, address_assign_request);
+        let (code, body) = state_machine.process_control_request(now, session_renew_req);
         let send_res = send_http_response(&mut snd, code, &body).await;
         if !code.is_success() {
             conn.close(SnaptunConnErrors::InvalidRequest.into(), &body);
@@ -233,7 +231,9 @@ impl<T: SnapTunToken> Server<T> {
         .await?;
 
         let now = SystemTime::now();
-        debug!(?now, request=?address_assign_request, "Process expected address assignment request");
+
+        tracing::debug!(?now, request=?address_assign_request, "Got address assignment request");
+
         let (code, body) = state_machine.process_control_request(now, address_assign_request);
         let send_res = send_http_response(&mut snd, code, &body).await;
         if !code.is_success() {
@@ -360,6 +360,13 @@ impl<T: SnapTunToken> Sender<T> {
         let pkt = self.validate_tun(pkt)?;
         self.conn.send_datagram_wait(pkt).await?;
         Ok(())
+    }
+
+    /// Immediately closes the underlying connection with the given code and reason.
+    ///
+    /// All other methods on this Sender will return ConnectionClosed after this is called.
+    pub fn close(&self, code: u32, reason: &'static [u8]) {
+        self.conn.close(code.into(), reason);
     }
 
     fn validate_tun(&self, pkt: Bytes) -> Result<Bytes, SendPacketError<T>> {
@@ -684,15 +691,15 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
                 (StatusCode::OK, resp_body)
             }
             Err(TokenValidatorError::JwtSignatureInvalid()) => {
-                info!("Invalid signature");
+                tracing::info!("Invalid signature");
                 (StatusCode::UNAUTHORIZED, "Unauthorized".into())
             }
             Err(TokenValidatorError::JwtError(err)) => {
-                info!(?err, "Token validation failed");
+                tracing::info!(?err, "Token validation failed");
                 (StatusCode::UNAUTHORIZED, "Unauthorized".into())
             }
             Err(TokenValidatorError::TokenExpired(err)) => {
-                info!(?err, "Token validation failed: token expired");
+                tracing::info!(?err, "Token validation failed: token expired");
                 (StatusCode::UNAUTHORIZED, "Unauthorized".into())
             }
         }
@@ -711,7 +718,9 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
             Ok(claims) => {
                 if addr_assignments.requested_addresses.len() > 1 {
                     // We only implement single address assignments at the moment
-                    warn!("Address assignment failed, multiple address assignments not supported");
+                    tracing::warn!(
+                        "Address assignment failed, multiple address assignments not supported"
+                    );
                     return (
                         StatusCode::NOT_IMPLEMENTED,
                         "multiple address assignments are not supported".into(),
@@ -739,7 +748,9 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
                     .iter()
                     .any(|(_, net)| net.prefix_len() != net.max_prefix_len())
                 {
-                    warn!("Address assignment failed, prefix assignments are not supported");
+                    tracing::warn!(
+                        "Address assignment failed, prefix assignments are not supported"
+                    );
                     return (
                         StatusCode::NOT_IMPLEMENTED,
                         "prefix assignments are not supported".into(),
@@ -756,7 +767,7 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
                 let session_expiry = match inner_state.session_validity() {
                     Ok(v) => v,
                     Err(err) => {
-                        error!(
+                        tracing::error!(
                             ?err,
                             "Failed to get session validity when processing address assignment request"
                         );
@@ -779,7 +790,7 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
                             break;
                         }
                         Err(err) => {
-                            debug!(
+                            tracing::debug!(
                                 ?err,
                                 "Address allocation failed for ISD-AS {requested_isd_as} and net {requested_net}"
                             );
@@ -789,7 +800,9 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
 
                 // Only return an error if no addresses were assigned.
                 let Some(assigned_address) = assigned_address else {
-                    warn!("Address assignment failed - no available addresses for: {requests:?}",);
+                    tracing::warn!(
+                        "Address assignment failed - no available addresses for: {requests:?}",
+                    );
                     return (
                         StatusCode::BAD_REQUEST,
                         "either requested address is unavailable, or no addresses are available"
@@ -814,15 +827,15 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
                 (StatusCode::OK, resp_body)
             }
             Err(TokenValidatorError::JwtSignatureInvalid()) => {
-                info!("Invalid JWT Signature");
+                tracing::info!("Invalid JWT Signature");
                 (StatusCode::UNAUTHORIZED, "unauthorized".into())
             }
             Err(TokenValidatorError::JwtError(err)) => {
-                info!(?err, "Token validation failed");
+                tracing::info!(?err, "Token validation failed");
                 (StatusCode::UNAUTHORIZED, "unauthorized".into())
             }
             Err(TokenValidatorError::TokenExpired(err)) => {
-                info!(?err, "Token validation failed: token expired");
+                tracing::info!(?err, "Token validation failed: token expired");
                 (StatusCode::UNAUTHORIZED, "unauthorized".into())
             }
         }
@@ -860,7 +873,7 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
         if self.sender.send(()).is_err() {
             // This happens only if the channel is closed, which means that the session has
             // expired and the receiver is no longer interested in updates.
-            debug!("Failed to notify session expiry update");
+            tracing::debug!("Failed to notify session expiry update");
         }
     }
 
@@ -934,7 +947,7 @@ impl<T: SnapTunToken> TunnelStateMachine<T> {
         } = &*inner_state
         {
             if !self.allocator.put_on_hold(address.id.clone()) {
-                error!(addr=?address.address, "Could not set address to hold during shutdown - address was released while tunnel was still assigned");
+                tracing::error!(addr=?address.address, "Could not set address to hold during shutdown - address was released while tunnel was still assigned");
             }
         }
 

@@ -117,7 +117,7 @@ impl Endpoint {
                         .lookup_scion_address(remote_socket_addr.ip())
                         .or_else(|| {
                             panic!(
-                                "no scion address for ip, this should never happen: {}",
+                                "no scion address mapped for ip, this should never happen: {}",
                                 remote_socket_addr.ip(),
                             );
                         })
@@ -304,7 +304,7 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
             self.address_translator
                 .lookup_scion_address(transmit.destination.ip())
                 .ok_or(std::io::Error::other(format!(
-                    "no scion address for ip, this should never happen: {}",
+                    "no scion address mapped for ip, this should never happen: {}",
                     transmit.destination.ip(),
                 )))?,
             transmit.destination.port(),
@@ -335,7 +335,7 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
             Err(e) if e.kind() == ErrorKind::WouldBlock => Err(e),
             Err(e) => {
                 // XXX: We only log the error such that the quinn connection driver doesn't quit.
-                log_error(
+                debounced_warn(
                     &self.last_send_error,
                     "Failed to send on the underlying socket",
                     e,
@@ -386,7 +386,7 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
             Err(e) if e.kind() == ErrorKind::WouldBlock => Poll::Ready(Err(e)),
             Err(e) => {
                 // XXX: We only log the error such that the endpoint driver doesn't quit.
-                log_error(
+                debounced_warn(
                     &self.last_recv_error,
                     "Failed to receive on the underlying socket",
                     e,
@@ -411,11 +411,11 @@ impl AsyncUdpSocket for ScionAsyncUdpSocket {
 /// Logging will only be performed if at least [`IO_ERROR_LOG_INTERVAL`]
 /// has elapsed since the last error was logged.
 // Inspired by quinn's `log_sendmsg_error`.
-fn log_error(last_send_error: &Mutex<Instant>, msg: &str, err: impl core::fmt::Debug) {
+fn debounced_warn(last_send_error: &Mutex<Instant>, msg: &str, err: impl core::fmt::Debug) {
     let now = Instant::now();
     let last_send_error = &mut *last_send_error.lock().expect("poisoned lock");
     if now.saturating_duration_since(*last_send_error) > IO_ERROR_LOG_INTERVAL {
         *last_send_error = now;
-        tracing::warn!("{}: {:?}", msg, err);
+        tracing::warn!(?err, "{msg}");
     }
 }

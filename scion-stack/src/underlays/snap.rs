@@ -25,6 +25,7 @@ use scion_proto::address::{EndhostAddr, SocketAddr};
 use snap_control::{client::ControlPlaneApi, crpc_api::api_service::model::SessionGrant};
 use socket::{SnapAsyncUdpSocket, SnapUnderlaySocket};
 use tokio::sync::mpsc;
+use tracing::{Instrument, Span, instrument};
 
 use crate::{
     allocation::{self, PortAllocator},
@@ -74,6 +75,7 @@ pub enum NewSnapUnderlayStackError {
 
 impl SnapUnderlayStack {
     /// Create a new SNAP underlay stack.
+    #[instrument(name = "snap_stack", fields(local), skip_all)]
     pub async fn new(
         snap_cp_client: Arc<dyn ControlPlaneApi>,
         session_grants: Vec<SessionGrant>,
@@ -112,12 +114,22 @@ impl SnapUnderlayStack {
 
         let assigned_addresses = tunnel.assigned_addresses();
 
+        // Record the assigned addresses in the tracing span.
+        Span::current().record(
+            "local",
+            assigned_addresses
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+
         let default_scmp_handler = default_scmp_handler_factory(tunnel.clone());
 
         let demultiplexer = DemultiplexerHost::new(tunnel.clone(), default_scmp_handler);
         let demultiplexer_handle = demultiplexer.handle();
 
-        tokio::spawn(demultiplexer.main_loop());
+        tokio::spawn(demultiplexer.main_loop().in_current_span());
         // A task that logs path statistics on a regular basis (every 10
         // minutes).
         tokio::spawn({
@@ -132,6 +144,7 @@ impl SnapUnderlayStack {
                     };
                 }
             }
+            .in_current_span()
         });
 
         Ok(Self {
@@ -154,19 +167,19 @@ impl SnapUnderlayStack {
                 let eh_addr = EndhostAddr::try_from(addr.scion_address()).map_err(|_| {
                     ScionSocketBindError::InvalidBindAddress(
                         addr,
-                        "Service addresses can't be bound".to_string(),
+                        "service addresses can't be bound".to_string(),
                     )
                 })?;
                 if !self.tunnel.assigned_addresses().contains(&eh_addr) {
                     return Err(ScionSocketBindError::InvalidBindAddress(
                         addr,
-                        "Requested address is not assigned".to_string(),
+                        "requested address is not assigned".to_string(),
                     ));
                 }
                 addr.scion_address().try_into().map_err(|_| {
                     ScionSocketBindError::InvalidBindAddress(
                         bind_addr.unwrap(),
-                        "Cannot bind to service address".to_string(),
+                        "cannot bind to service address".to_string(),
                     )
                 })?
             }
@@ -174,7 +187,7 @@ impl SnapUnderlayStack {
                 *self.tunnel.assigned_addresses().first().ok_or_else(|| {
                     ScionSocketBindError::InvalidBindAddress(
                         bind_addr.unwrap(),
-                        "No address assigned".to_string(),
+                        "no address assigned".to_string(),
                     )
                 })?
             }
@@ -198,13 +211,13 @@ impl SnapUnderlayStack {
                     allocation::PortAllocatorError::AddressNotFound => {
                         ScionSocketBindError::InvalidBindAddress(
                             bind_addr.unwrap(),
-                            "Requested address is not assigned".to_string(),
+                            "requested address is not assigned".to_string(),
                         )
                     }
                     allocation::PortAllocatorError::NoAvailablePorts => {
                         ScionSocketBindError::InvalidBindAddress(
                             bind_addr.unwrap(),
-                            "No available ports".to_string(),
+                            "no available ports".to_string(),
                         )
                     }
                 }

@@ -29,7 +29,7 @@ use scion_proto::{
     wire_encoding::WireEncodeVec as _,
 };
 use tokio::{net::UdpSocket, sync::mpsc};
-use tracing::warn;
+use tracing::{error, warn};
 
 use super::underlay_resolver::UdpUnderlayResolver;
 use crate::scionstack::{
@@ -314,7 +314,7 @@ impl AsyncUdpUnderlaySocket for UdpAsyncUdpUnderlaySocket {
             Ok(_) => Ok(()),
             Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
             Err(e) => {
-                warn!("Error sending packet: {e:?}");
+                warn!(err = ?e, "Error sending packet");
                 Ok(())
             }
         }?;
@@ -361,7 +361,7 @@ impl AsyncUdpUnderlaySocket for UdpAsyncUdpUnderlaySocket {
                     Ok(result) => Poll::Ready(Ok(result)),
                     Err(e) => {
                         // Ignore errors, we just return pending.
-                        tracing::error!("Error receiving packet: {e:#}");
+                        error!(err = ?e, "Error receiving packet");
                         Poll::Pending
                     }
                 }

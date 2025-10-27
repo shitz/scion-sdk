@@ -49,7 +49,7 @@ use scion_proto::{
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use crate::{
     path::{PathStrategy, types::PathManagerPath},
@@ -271,10 +271,7 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManager<F> {
 
     fn prefetch_path_internal(&self, src: IsdAsn, dst: IsdAsn, now: DateTime<Utc>) {
         if let Err(e) = self.prefetch_tx.try_send(PrefetchRequest { src, dst, now }) {
-            trace!(
-                "Failed to send prefetch request - background task may be stopped: {}",
-                e
-            );
+            warn!(err=?e, "Prefetch path channel send failed");
         }
     }
 
@@ -291,10 +288,7 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManager<F> {
             now,
             path,
         }) {
-            warn!(
-                "Failed to send path registration - background task may be stopped: {}",
-                e
-            );
+            warn!(err=?e, "Register path channel send failed");
         }
     }
 }
@@ -302,8 +296,6 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManager<F> {
 impl<F: PathFetcher> Drop for CachingPathManager<F> {
     fn drop(&mut self) {
         self.cancellation_token.cancel();
-        // Background task will be cleaned up automatically
-        trace!("PathManager dropped, background task cancelled");
     }
 }
 
@@ -449,8 +441,18 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManagerState<F> {
             .map(|p| PathManagerPath::new(p, false))
             .collect::<Vec<_>>();
 
+        let initial = paths.len();
+
         self.selection.filter_inplace(&mut paths);
         self.selection.rank_inplace(&mut paths);
+
+        tracing::info!(
+            src = %src,
+            dst = %dst,
+            n_initial = initial,
+            n_ok = paths.len(),
+            "Fetched and filtered paths",
+        );
 
         let preferred_path = paths.into_iter().next().ok_or(PathWaitError::NoPathFound)?;
         let preferred_path_entry = PathCacheEntry::new(preferred_path.clone(), now);
@@ -464,7 +466,6 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManagerState<F> {
             }
         }
 
-        debug!(src = %src, dst = %dst, "Cached new path");
         Ok(preferred_path.path)
     }
 
@@ -505,7 +506,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             tokio::select! {
                 // Handle cancellation with highest priority
                 _ = self.cancellation_token.cancelled() => {
-                    debug!("Path manager task cancelled");
+                    info!("Path manager task cancelled");
                     break;
                 }
 
@@ -516,7 +517,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                             self.handle_registration(reg).await;
                         }
                         None => {
-                            debug!("Registration channel closed");
+                            info!("Registration channel closed");
                             break;
                         }
                     }
@@ -529,7 +530,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                             self.handle_prefetch(req).await;
                         }
                         None => {
-                            debug!("Prefetch channel closed");
+                            info!("Prefetch channel closed");
                             break;
                         }
                     }
@@ -537,7 +538,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             }
         }
 
-        trace!("Path manager task finished");
+        info!("Path manager task finished");
     }
 
     async fn handle_registration(&self, registration: PathRegistration) {
@@ -572,6 +573,11 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                     // or if the new path is preferred (Ordering::Less means new_path is preferred)
                     || self.state.selection.rank_order(&new_path, &entry.path) == Ordering::Less
                 {
+                    info!(
+                        src = %registration.src,
+                        dst = %registration.dst,
+                        "Updating active path"
+                    );
                     entry.update(PathCacheEntry::new(new_path, registration.now));
                 }
             }
@@ -584,12 +590,9 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
     /// Handle a prefetch request by checking the cache and fetching the path if necessary.
     /// If the path is already cached or there is an in-flight request, it skips fetching.
     /// Otherwise, it fetches the path and caches it.
+    #[instrument(name = "prefetch", fields(src = %request.src, dst = %request.dst), skip_all)]
     async fn handle_prefetch(&self, request: PrefetchRequest) {
-        debug!(
-            src = %request.src,
-            dst = %request.dst,
-            "Handling prefetch request"
-        );
+        debug!("Handling prefetch request");
 
         // Check if we already have a valid cached path
         if self
@@ -604,11 +607,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
 
         // Check if there is an in-flight request for the same source and destination
         if self.state.request_inflight(request.src, request.dst) {
-            debug!(
-                src = %request.src,
-                dst = %request.dst,
-                "Path request already in flight, skipping prefetch"
-            );
+            debug!("Path request already in flight, skipping prefetch");
             return;
         }
 
@@ -621,16 +620,10 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             .await
         {
             Ok(_) => {
-                debug!(
-                    src = %request.src,
-                    dst = %request.dst,
-                    "Successfully prefetched path"
-                );
+                debug!("Successfully prefetched path");
             }
             Err(e) => {
-                error!(
-                    src = %request.src,
-                    dst = %request.dst,
+                warn!(
                     error = %e,
                     "Failed to prefetch path"
                 );
@@ -682,7 +675,8 @@ impl SegmentFetcher for ConnectRpcSegmentFetcher {
             .client
             .list_segments(src, dst, 128, "".to_string())
             .await?;
-        tracing::debug!(
+
+        debug!(
             n_core=resp.core_segments.len(),
             n_up=resp.up_segments.len(),
             n_down=resp.down_segments.len(),
@@ -690,6 +684,7 @@ impl SegmentFetcher for ConnectRpcSegmentFetcher {
             dst = %dst,
             "Received segments from control plane"
         );
+
         let (core_segments, non_core_segments) = resp.split_parts();
         Ok(Segments {
             core_segments,
@@ -720,6 +715,7 @@ impl<L: SegmentFetcher + Send + Sync> PathFetcher for PathFetcherImpl<L> {
             core_segments,
             non_core_segments,
         } = self.segment_fetcher.fetch_segments(src, dst).await?;
+
         trace!(
             n_core_segments = core_segments.len(),
             n_non_core_segments = non_core_segments.len(),
@@ -727,6 +723,7 @@ impl<L: SegmentFetcher + Send + Sync> PathFetcher for PathFetcherImpl<L> {
             dst = %dst,
             "Fetched segments"
         );
+
         let paths = path::combinator::combine(src, dst, core_segments, non_core_segments);
         Ok(paths)
     }

@@ -21,8 +21,8 @@ use std::{
 use bytes::Bytes;
 use quinn::{Connection, Endpoint as QuinnEndpoint};
 use scion_proto::{
-    address::{EndhostAddr, HostAddr, IsdAsn, ScionAddr},
-    packet::{ByEndpoint, CommonHeader, ScionPacketScmp, ScmpEncodeError},
+    address::{EndhostAddr, HostAddr, ScionAddr},
+    packet::{ByEndpoint, ScionPacketScmp, ScmpEncodeError, layout::ScionPacketOffset},
     path::DataPlanePath,
     scmp::{ParameterProblemCode, ScmpMessage, ScmpParameterProblem},
     wire_encoding::WireEncodeVec,
@@ -30,7 +30,7 @@ use scion_proto::{
 use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use tokio_util::sync::CancellationToken;
-use tracing::{Instrument, debug, error, info, instrument};
+use tracing::{Instrument, Span, debug, error, info, instrument, warn};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -85,7 +85,6 @@ where
     ///
     /// The tunnel gateway accepts incoming QUIC connections and tries to establish SNAP tunnels on
     /// the accepted connections.
-    #[instrument(name = "tunnel_gateway", skip_all)]
     pub async fn start_server<D: Dispatcher + 'static>(
         &self,
         cancellation_token: CancellationToken,
@@ -95,18 +94,14 @@ where
         while let Some(connection) = endpoint.accept().await {
             match connection.await {
                 Ok(c) => {
-                    tokio::spawn(
-                        self.clone()
-                            .handle_connection(
-                                c,
-                                cancellation_token.child_token(),
-                                dispatcher.clone(),
-                            )
-                            .in_current_span(),
-                    );
+                    tokio::spawn(self.clone().handle_connection(
+                        c,
+                        cancellation_token.child_token(),
+                        dispatcher.clone(),
+                    ));
                 }
                 Err(e) => {
-                    error!(error=%e, "Failed accepting new connection");
+                    warn!(error=%e, "Client connection was not accepted");
                 }
             }
         }
@@ -116,7 +111,7 @@ where
         ))
     }
 
-    #[instrument(skip_all, fields(remote_addr = %conn.remote_address()))]
+    #[instrument(name = "conn", skip_all, fields(remote = %conn.remote_address(), assigned))]
     async fn handle_connection<D: Dispatcher + 'static>(
         self,
         conn: Connection,
@@ -133,91 +128,110 @@ where
                 return;
             }
         };
-        self.metrics.snaptun_connections_active.inc();
-
-        // Spawn a task to handle the session control stream.
-        tokio::spawn(async move {
-            match ctrl.await {
-                Ok(_) => {
-                    debug!("Session control stream closed gracefully");
-                }
-                Err(e) => {
-                    error!(error=%e, "Session control stream closed with error");
-                }
-            }
-        });
 
         let assigned_addrs = tx.assigned_addresses();
         assert!(
             !assigned_addrs.is_empty(),
             "At least one address must be assigned"
         );
+
+        self.metrics.snaptun_connections_active.inc();
+
+        // Record the assigned addresses in the tracing span.
+        Span::current().record(
+            "assigned",
+            assigned_addrs
+                .iter()
+                .map(|a| a.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+
+        // Spawn a task to handle the session control stream.
+        tokio::spawn(
+            async move {
+                match ctrl.await {
+                    Ok(_) => {
+                        debug!("Session control stream closed gracefully");
+                    }
+                    Err(e) => {
+                        error!(error=%e, "Session control stream closed with error");
+                    }
+                }
+            }
+            .in_current_span(),
+        );
+
         let cloned_addrs: Vec<EndhostAddr> = assigned_addrs.clone();
         let shared_tx = Arc::new(tx);
         // Insert the tunnel for each assigned address into the tunnels map.
         {
             for &addr in assigned_addrs.iter() {
-                self.state.add_tunnel(addr, shared_tx.clone());
+                self.state.add_tunnel_mapping(addr, shared_tx.clone());
                 debug!(%addr, "Added new SNAP tunnel");
             }
         }
 
         cancellation_token
-            .run_until_cancelled(async move {
-                loop {
-                    // Handle new datagram.
-                    match rx.receive().await {
-                        Ok(data) => {
-                            match inbound_datagram_check(&data[..], &assigned_addrs) {
-                                Ok(pkt) => {
-                                    dispatcher.try_dispatch(pkt);
-                                }
-                                Err(e) => {
-                                    debug!(err=%e, "inbound datagram check failed");
-                                    // Use the first assigned address for the SCMP reply.
-                                    Self::handle_scmp_error(
-                                        e,
-                                        data,
-                                        local_addr,
-                                        assigned_addrs[0],
-                                        shared_tx.clone(),
-                                    );
+            .run_until_cancelled({
+                let shared_tx = shared_tx.clone();
+                async move {
+                    loop {
+                        // Handle new datagram.
+                        match rx.receive().await {
+                            Ok(data) => {
+                                match inbound_datagram_check(&data[..], &assigned_addrs) {
+                                    Ok(pkt) => {
+                                        dispatcher.try_dispatch(pkt);
+                                    }
+                                    Err(e) => {
+                                        debug!(err=%e, "Inbound datagram check failed");
+                                        // Use the first assigned address for the SCMP reply.
+                                        Self::create_scmp_error(
+                                            e,
+                                            data,
+                                            local_addr,
+                                            assigned_addrs[0],
+                                            shared_tx.clone(),
+                                        );
+                                    }
                                 }
                             }
-                        }
-                        Err(e) => {
-                            match e {
-                                snap_tun::server::ReceivePacketError::ConnectionClosed => {
-                                    info!("Connection closed by client");
-                                    break;
-                                }
-                                snap_tun::server::ReceivePacketError::ConnectionError(e) => {
-                                    error!(error=%e, "Connection error");
-                                    break;
+                            Err(e) => {
+                                match e {
+                                    snap_tun::server::ReceivePacketError::ConnectionClosed => {
+                                        info!("Connection closed by client");
+                                        break;
+                                    }
+                                    snap_tun::server::ReceivePacketError::ConnectionError(e) => {
+                                        error!(error=%e, "Connection error");
+                                        break;
+                                    }
                                 }
                             }
                         }
                     }
                 }
+                .in_current_span()
             })
             .await;
 
         // The session was closed by the client or cancelled by the server.
         for addr in cloned_addrs {
-            self.state.remove_tunnel(addr);
-            debug!(%addr, "Removed SNAP tunnel");
+            self.state.remove_tunnel_mapping_if_same(addr, &shared_tx);
         }
+
         self.metrics.snaptun_connections_active.dec();
     }
 
-    fn handle_scmp_error(
+    fn create_scmp_error(
         err: PacketPolicyError,
         data: Bytes,
         local_addr: HostAddr,
         dst_addr: EndhostAddr,
         tx: Arc<snap_tun::server::Sender<T>>,
     ) {
-        let scmp_message = match inbound_scmp_error(err, data) {
+        let scmp_message = match create_inbound_scmp_error(err, data) {
             Ok(s) => s,
             Err(e) => {
                 error!(error=%e, "Error creating SCMP message");
@@ -247,56 +261,60 @@ where
     }
 }
 
-fn inbound_scmp_error(err: PacketPolicyError, d: Bytes) -> Result<ScmpMessage, ScmpEncodeError> {
+fn create_inbound_scmp_error(
+    err: PacketPolicyError,
+    offending_packet: Bytes,
+) -> Result<ScmpMessage, ScmpEncodeError> {
     let scmp_message = match err {
         PacketPolicyError::InvalidCommonHeader(_error) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidCommonHeader,
                 0,
-                d,
+                offending_packet,
             ))
         }
         PacketPolicyError::InvalidAddressHeader(_error) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidAddressHeader,
-                CommonHeader::LENGTH as u16,
-                d,
+                ScionPacketOffset::address_header().base().bytes(),
+                offending_packet,
             ))
         }
-        // TODO(bunert): The pointer should point to the SrcHostAddr offset and not SrcISD.
         PacketPolicyError::InvalidSourceAddress => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidSourceAddress,
-                (CommonHeader::LENGTH + (IsdAsn::BITS as usize) / 8) as u16,
-                d,
+                ScionPacketOffset::address_header()
+                    .src_host_addr(&offending_packet)
+                    .bytes(),
+                offending_packet,
             ))
         }
         PacketPolicyError::InvalidPathType(_type) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::UnknownPathType,
-                CommonHeader::PATH_TYPE_OFFSET,
-                d,
+                ScionPacketOffset::common_header().path_type().bytes(),
+                offending_packet,
             ))
         }
         PacketPolicyError::InvalidPath(_error, offset) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidPath,
                 offset,
-                d,
+                offending_packet,
             ))
         }
         PacketPolicyError::InconsistentPathLength(offset) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidPath,
                 offset,
-                d,
+                offending_packet,
             ))
         }
         PacketPolicyError::PacketEmptyOrTruncated(offset) => {
             ScmpMessage::from(ScmpParameterProblem::new(
                 ParameterProblemCode::InvalidPacketSize,
                 offset,
-                d,
+                offending_packet,
             ))
         }
     };

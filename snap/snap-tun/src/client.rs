@@ -27,7 +27,6 @@ use prost::Message;
 use quinn::{RecvStream, SendStream};
 use scion_proto::address::EndhostAddr;
 use tokio::{sync::watch, task::JoinHandle};
-use tracing::debug;
 
 use crate::requests::{
     AddrError, AddressAssignRequest, AddressAssignResponse, AddressRange, SessionRenewalResponse,
@@ -156,7 +155,7 @@ impl Control {
         &mut self,
         desired_addresses: Vec<EndhostAddr>,
     ) -> Result<(), ControlError> {
-        debug!(?desired_addresses, "Requesting address assignment");
+        tracing::debug!(?desired_addresses, "Requesting address assignment");
 
         let (mut snd, mut rcv) = self.conn.open_bi().await?;
 
@@ -202,7 +201,7 @@ impl Control {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        debug!(?assigned_addresses, "Got address assignment");
+        tracing::debug!(?assigned_addresses, "Got address assignment");
 
         self.state.write().expect("no fail").assigned_addresses = assigned_addresses;
 
@@ -254,18 +253,18 @@ impl Control {
                 } else {
                     (secs_until_expiry as f32 * SLEEP_FRACTION) as u64
                 };
-                debug!("Next session renewal in {sleep_secs} seconds");
+                tracing::debug!("Next session renewal in {sleep_secs} seconds");
 
                 tokio::select! {
                     _ = expiry_notifier.changed() => continue,
                     _ = tokio::time::sleep(Duration::from_secs(sleep_secs)) => {
-                        debug!("Renewing token and snaptun session");
+                        tracing::debug!("Renewing token and snaptun session");
 
                         // renew token
                         let token = match (config.token_renewer)().await {
                             Ok(token) => token,
                             Err(err) => {
-                                debug!(%err, "Failed to renew token, retry");
+                                tracing::warn!(%err, "Failed to renew token, retrying");
                                 retries += 1;
                                 if retries >= MAX_RETRIES {
                                     return Err(RenewTaskError::MaxRetriesReached);
@@ -279,7 +278,7 @@ impl Control {
                         let new_expiry = match renew_session(&conn, &token).await {
                             Ok(exp) => exp,
                             Err(err) => {
-                                debug!(%err, "Failed to renew session, retry");
+                                tracing::warn!(%err, "Failed to renew session, retrying");
                                 retries += 1;
                                 if retries >= MAX_RETRIES {
                                     return Err(RenewTaskError::MaxRetriesReached);
@@ -289,7 +288,7 @@ impl Control {
                             }
                         };
 
-                        debug!(new_expiry=%chrono::DateTime::<chrono::Utc>::from(new_expiry).to_rfc3339(), "auto session renewal successful");
+                        tracing::info!(new_expiry=%chrono::DateTime::<chrono::Utc>::from(new_expiry).to_rfc3339(), "Auto session renewal successful");
                         conn_state.write().expect("no fail").session_expiry = new_expiry;
                         retries = 0;
                     }
@@ -310,7 +309,7 @@ impl Control {
         {
             // This happens only if the channel is closed, which means that the session has
             // expired and the receiver is no longer interested in updates.
-            debug!("Failed to notify session expiry update");
+            tracing::debug!("Failed to notify session expiry update");
         }
     }
 

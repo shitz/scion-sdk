@@ -73,7 +73,7 @@ impl PathUnawareUdpScionSocket {
             Err(e) => {
                 return Box::pin(async move {
                     Err(ScionSocketSendError::InvalidPacket(
-                        format!("Error encoding packet: {e:#}").into(),
+                        format!("error encoding packet: {e}").into(),
                     ))
                 });
             }
@@ -108,9 +108,9 @@ impl PathUnawareUdpScionSocket {
                     }
                 };
                 trace!(
-                    "received packet from {}, length {}",
-                    src_addr,
-                    packet.datagram.payload.len()
+                    src = %src_addr,
+                    length = packet.datagram.payload.len(),
+                    "received packet",
                 );
 
                 let max_read = std::cmp::min(buffer.len(), packet.datagram.payload.len());
@@ -146,23 +146,23 @@ impl PathUnawareUdpScionSocket {
                 let packet: ScionPacketUdp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid UDP packet, skipping");
+                        debug!(error = %e, "Received invalid UDP packet, dropping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => SocketAddr::new(source, packet.src_port()),
                     None => {
-                        debug!("Received packet without source address header, skipping");
+                        debug!("Received packet without source address header, dropping");
                         continue;
                     }
                 };
 
                 trace!(
-                    "received packet from {}, length {}, into buffer of size {}",
-                    src_addr,
-                    packet.datagram.payload.len(),
-                    buffer.len()
+                    src = %src_addr,
+                    length = packet.datagram.payload.len(),
+                    buffer_size = buffer.len(),
+                    "received packet",
                 );
 
                 let max_read = std::cmp::min(buffer.len(), packet.datagram.payload.len());
@@ -210,7 +210,7 @@ impl ScmpScionSocket {
             Err(e) => {
                 return Box::pin(async move {
                     Err(ScionSocketSendError::InvalidPacket(
-                        format!("Error encoding packet: {e:#}").into(),
+                        format!("error encoding packet: {e}").into(),
                     ))
                 });
             }
@@ -232,14 +232,14 @@ impl ScmpScionSocket {
                 let packet: ScionPacketScmp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid SCMP packet, skipping");
+                        debug!(error = %e, "Received invalid SCMP packet, dropping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => source,
                     None => {
-                        debug!("Received packet without source address header, skipping");
+                        debug!("Received packet without source address header, dropping");
                         continue;
                     }
                 };
@@ -466,14 +466,14 @@ impl<P: PathManager> UdpScionSocket<P> {
                 );
             }
             Err(e) => {
-                trace!("Failed to reverse path for registration: {e}")
+                trace!(error = ?e, "Failed to reverse path for registration")
             }
         }
 
         trace!(
-            "Registered reverse path from {} to {}",
-            self.socket.local_addr(),
-            sender_addr
+            src = %self.socket.local_addr(),
+            dst = %sender_addr,
+            "Registered reverse path",
         );
 
         Ok((len, sender_addr, path))

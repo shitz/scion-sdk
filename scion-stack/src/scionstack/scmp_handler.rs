@@ -20,7 +20,7 @@ use scion_proto::{
     scmp::{ScmpEchoReply, ScmpMessage},
     wire_encoding::WireEncodeVec as _,
 };
-use tracing::debug;
+use tracing::{debug, warn};
 
 use crate::snap_tunnel::SnapTunnel;
 
@@ -73,7 +73,7 @@ impl ScmpHandler for DefaultScmpHandler {
             let reply_path = match p.headers.reversed_path(None) {
                 Ok(path) => path.data_plane_path,
                 Err(e) => {
-                    debug!("error reversing path of scmp packet: {}", e);
+                    debug!(error = %e, "error reversing path of scmp packet");
                     return;
                 }
             };
@@ -103,7 +103,7 @@ impl ScmpHandler for DefaultScmpHandler {
             ) {
                 Ok(packet) => packet,
                 Err(e) => {
-                    debug!("error encoding scmp reply: {}", e);
+                    debug!(error = %e, "error encoding scmp reply");
                     return;
                 }
             };
@@ -113,7 +113,7 @@ impl ScmpHandler for DefaultScmpHandler {
             {
                 Ok(_) => {}
                 Err(e) => {
-                    debug!("error sending scmp reply: {}", e);
+                    warn!(error = %e, "error sending scmp reply");
                 }
             }
         })

@@ -29,6 +29,7 @@ pub mod dto;
 /// Shared tunnel gateway state.
 #[derive(Debug, Default, Clone)]
 pub struct SharedTunnelGatewayState<T: SnapTunToken>(
+    /// Mapping from assigned addresses to their corresponding tunnel senders.
     Arc<RwLock<BTreeMap<EndhostAddr, Arc<snap_tun::server::Sender<T>>>>>,
 );
 
@@ -48,20 +49,56 @@ impl<T: SnapTunToken> Deref for SharedTunnelGatewayState<T> {
 }
 
 impl<T: SnapTunToken> SharedTunnelGatewayState<T> {
-    pub(crate) fn add_tunnel(&self, addr: EndhostAddr, tunnel: Arc<snap_tun::server::Sender<T>>) {
+    /// Associates the given address with the given tunnel.
+    ///
+    /// If an existing mapping exists, it is overwritten.
+    pub(crate) fn add_tunnel_mapping(
+        &self,
+        addr: EndhostAddr,
+        tunnel: Arc<snap_tun::server::Sender<T>>,
+    ) {
         let mut tunnels = self.write().expect("no fail");
 
-        tracing::debug!(%addr, "Adding snaptun connection");
-        tunnels.insert(addr, tunnel);
+        match tunnels.insert(addr, tunnel) {
+            Some(e) => {
+                tracing::warn!(%addr, existing_remote=%e.remote_underlay_address(), "Overwriting existing snaptun connection mapping");
+            }
+            None => {
+                tracing::debug!(%addr, "Adding snaptun connection mapping");
+            }
+        }
     }
 
-    pub(crate) fn remove_tunnel(&self, addr: EndhostAddr) {
+    /// Removes the tunnel mapping for the given address.
+    ///
+    /// If no mapping exists, nothing happens.
+    pub(crate) fn remove_tunnel_mapping_if_same(
+        &self,
+        addr: EndhostAddr,
+        should_contain: &Arc<snap_tun::server::Sender<T>>,
+    ) {
         let mut tunnels = self.write().expect("no fail");
-        tracing::debug!(%addr, "Removing snaptun connection");
-        tunnels.remove(&addr);
+        match tunnels.entry(addr) {
+            std::collections::btree_map::Entry::Vacant(_) => {
+                tracing::debug!(%addr, "No snaptun connection mapping found to remove");
+            }
+            std::collections::btree_map::Entry::Occupied(occupied_entry) => {
+                let tunnel = occupied_entry.get();
+                if Arc::ptr_eq(tunnel, should_contain) {
+                    tracing::debug!(%addr, "Removing snaptun connection mapping");
+                    occupied_entry.remove();
+                } else {
+                    tracing::warn!(%addr, "Not removing snaptun connection mapping, is mapped to a different tunnel");
+                }
+            }
+        }
     }
 
-    pub(crate) fn get_tunnel(&self, addr: EndhostAddr) -> Option<Arc<snap_tun::server::Sender<T>>> {
+    /// Gets the tunnel mapped to the given address, if any.
+    pub(crate) fn get_mapped_tunnel(
+        &self,
+        addr: EndhostAddr,
+    ) -> Option<Arc<snap_tun::server::Sender<T>>> {
         let tunnels = self.read().expect("no fail");
         tunnels.get(&addr).cloned()
     }

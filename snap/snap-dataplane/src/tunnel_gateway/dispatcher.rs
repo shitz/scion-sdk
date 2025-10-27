@@ -21,7 +21,7 @@ use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use snap_tun::server::{AddressAssignmentError, SendPacketError};
 use tokio::sync::mpsc::{Receiver, Sender, error::TrySendError};
-use tracing::{debug, info, span, trace};
+use tracing::{debug, info, trace};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -86,33 +86,31 @@ where
                 }
             };
 
-            match self.state.get_tunnel(dest_addr) {
+            match self.state.get_mapped_tunnel(dest_addr) {
                 Some(tun) => {
-                    span!(tracing::Level::INFO, "connection", remote_underlay_address = %tun.remote_underlay_address(), dest_addr = %dest_addr).in_scope(|| {
-                        let raw: Bytes = packet.encode_to_bytes_vec().concat().into();
-                        trace!(dst=%dest_addr, pkt_len=%raw.len(), "dispatching packet");
-                        if let Err(e) = tun.send(raw) {
-                            match e {
-                                SendPacketError::ConnectionClosed => {
-                                    self.metrics.connection_closed_errors.inc()
-                                }
-                                SendPacketError::NewAssignedAddress(_) => {
-                                    self.metrics.new_assigned_address_errors.inc()
-                                }
-                                SendPacketError::AddressAssignmentError(
-                                    AddressAssignmentError::NoAddressAssigned,
-                                ) => self.metrics.no_address_assigned_errors.inc(),
-                                SendPacketError::SendDatagramError(_) => {
-                                    self.metrics.send_datagram_errors.inc()
-                                }
+                    let raw: Bytes = packet.encode_to_bytes_vec().concat().into();
+                    trace!(remote = %tun.remote_underlay_address(), remote_virt_addr = %dest_addr, pkt_len=%raw.len(), "dispatching packet");
+                    if let Err(e) = tun.send(raw) {
+                        match e {
+                            SendPacketError::ConnectionClosed => {
+                                self.metrics.connection_closed_errors.inc()
+                            }
+                            SendPacketError::NewAssignedAddress(_) => {
+                                self.metrics.new_assigned_address_errors.inc()
+                            }
+                            SendPacketError::AddressAssignmentError(
+                                AddressAssignmentError::NoAddressAssigned,
+                            ) => self.metrics.no_address_assigned_errors.inc(),
+                            SendPacketError::SendDatagramError(_) => {
+                                self.metrics.send_datagram_errors.inc()
                             }
                         }
-                    });
+                    }
                 }
                 _ => {
                     // No tunnel available for the destination address, drop the packet.
                     self.metrics.missing_tunnel_errors.inc();
-                    debug!(dest_addr=%dest_addr, "no connection found");
+                    debug!(dest_addr=%dest_addr, "No tunnel mapping found for addr");
                 }
             }
         }

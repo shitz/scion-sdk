@@ -92,7 +92,7 @@ impl SnapTunnel {
     ///   server will assign an address.
     /// * `auto_session_renewal` - If set, the SNAP data plane session will be automatically
     ///   renewed.
-    #[instrument(name = "snap_tunnel", skip_all, fields(target_addr = %session_grant.address))]
+    #[instrument(name = "snaptun", skip_all, fields(dp = %session_grant.address))]
     pub async fn new(
         session_grant: &SessionGrant,
         api_client: Arc<dyn ControlPlaneApi>,

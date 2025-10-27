@@ -30,7 +30,7 @@ use tokio::{
         oneshot,
     },
 };
-use tracing::{debug, error, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use crate::scionstack::{ScionSocketBindError, SocketKind};
 
@@ -144,9 +144,8 @@ impl DemultiplexerState {
                     }
                 }
                 Err(TrySendError::Full(_)) => {
-                    warn!(
-                        "SocketDriver control channel is full, indicates that the SocketDriver has a bug and is stuck"
-                    );
+                    warn!("SocketDriver control channel is full, this is likely a bug");
+
                     return Err(ScionSocketBindError::Internal(
                         "SocketDriver control channel is full, this should never happen"
                             .to_string(),
@@ -275,6 +274,12 @@ impl SocketDriver {
             host_bind_addr: bind_addr,
         }
     }
+
+    #[instrument(
+        name = "udp_socketdrv",
+        skip_all,
+        fields(socket_addr=%self.host_bind_addr)
+    )]
     async fn run(mut self) {
         let mut recv_buffer = vec![0u8; UDP_DATAGRAM_BUFFER_SIZE];
 
@@ -286,14 +291,14 @@ impl SocketDriver {
                             _ = tx.send(self.receivers.register(key, sender));
                         }
                         None => {
-                            debug!(socket_addr=%self.host_bind_addr, "Socket driver shutting down because the control channel is closed, this means the scion stack was dropped");
+                            debug!("Demultiplexer control channel closed, shutting down socket driver");
                             break;
                         }
                     }
                 }
                 _ = self.receivers.all_closed() => {
                     // If all senders are closed, the socket driver is done.
-                    debug!(socket_addr=%self.host_bind_addr, "Socket driver shutting down because all senders are closed");
+                    debug!("All socket senders closed, shutting down socket driver");
                     break;
                 }
                 result = self.underlay_socket.recv(&mut recv_buffer) => {
@@ -304,14 +309,15 @@ impl SocketDriver {
                         }
                         Err(e) => {
                             error!("Error receiving datagram: {}", e);
-                            // If the underlay receiver is closed, the socket driver is done.
-                            debug!(socket_addr=%self.host_bind_addr, "Socket driver shutting down because underlay receiver is closed");
+                            debug!("Underlay socket errored, shutting down socket driver");
                             break;
                         }
                     }
                 }
             }
         }
+
+        info!("Socket driver shut down");
     }
 
     fn handle_recv(&mut self, raw_data: &mut BytesMut) {
@@ -328,9 +334,9 @@ impl SocketDriver {
             Some(dst) => {
                 if dst.host() != self.host_bind_addr.ip().into() {
                     debug!(
-                        socket_addr=%self.host_bind_addr,
                         src=%packet.headers.address.ia.source,
                         dst=%dst,
+                        expected=%self.host_bind_addr.ip(),
                         "Dropping packet with non-matching destination host",
                     );
                     return;
@@ -338,7 +344,6 @@ impl SocketDriver {
             }
             None => {
                 debug!(
-                    socket_addr=%self.host_bind_addr,
                     src=%packet.headers.address.ia.source,
                     dst=%packet.headers.address.ia.destination,
                     "Dropping packet with invalid destination address",

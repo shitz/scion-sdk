@@ -27,7 +27,7 @@ use tokio::{
     sync::mpsc::{Sender, error::TrySendError},
     time,
 };
-use tracing::{debug, error, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 
 use crate::{scionstack::ScmpHandler, snap_tunnel::SnapTunnel};
 
@@ -175,15 +175,11 @@ impl DemultiplexerHost {
                 // Prioritize receiving incoming packets.
                 result = self.underlay_receiver.read_datagram() => {
                     match result {
-                        Ok(raw_data) => {
-                            if let Err(err) = self.dispatch_packet(raw_data).await {
-                                warn!(%err, "Failed to dispatch packet");
-                            }
-                        }
+                        Ok(raw_data) => self.dispatch_packet(raw_data).await,
                         Err(err) => {
                             // TODO: this error never bubbles up and is never properly handled, it
                             // just stops the main loop
-                            tracing::error!(%err, "Failed to receive datagram");
+                            error!(%err, "Failed to receive datagram");
                             break;
                         }
                     }
@@ -194,24 +190,24 @@ impl DemultiplexerHost {
             }
         }
 
-        tracing::error!("SNAP underlay demultiplexer exiting")
+        info!("SNAP underlay demultiplexer exiting")
     }
 
-    async fn dispatch_packet(&mut self, mut raw_data: Bytes) -> Result<(), DemultiplexerError> {
+    async fn dispatch_packet(&mut self, mut raw_data: Bytes) {
         let packet = match ScionPacketRaw::decode(&mut raw_data) {
             Ok(packet) => packet,
             Err(e) => {
-                debug!(error = %e, "Failed to decode SCION packet");
-                return Ok(());
+                debug!(error = %e, "Failed to decode SCION packet, dropping");
+                return;
             }
         };
         // Classify the SCION packet
         let classified_packet = match classify_scion_packet(packet) {
             Ok(packet) => packet,
             Err(e) => {
-                debug!("Failed to classify SCION packet: {}", e);
+                debug!(error = %e, "Failed to classify SCION packet, dropping");
                 // TODO: increment counter for malformed packets
-                return Ok(());
+                return;
             }
         };
 
@@ -228,19 +224,18 @@ impl DemultiplexerHost {
             PacketClassification::Other(raw_packet) => {
                 // TODO: increment counter for unknown protocols
                 debug!(
-                    "Received SCION packet with unknown protocol: {}",
-                    raw_packet.headers.common.next_header
+                    proto_id = %raw_packet.headers.common.next_header,
+                    "Received SCION packet with unknown protocol, dropping",
                 );
             }
         }
-        Ok(())
     }
 
     fn dispatch_udp_packet(&mut self, udp_packet: ScionPacketUdp, dst_addr: Option<SocketAddr>) {
         let dst_addr: SocketAddr = match dst_addr {
             Some(addr) => addr,
             _ => {
-                debug!("Received UDP packet without valid destination address");
+                debug!("Received UDP packet without valid destination address, dropping");
                 return;
             }
         };

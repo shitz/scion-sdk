@@ -69,7 +69,7 @@ impl UdpUnderlayStack {
                 if addr.is_service() {
                     return Err(ScionSocketBindError::InvalidBindAddress(
                         addr,
-                        "Service addresses can't be bound".to_string(),
+                        "service addresses can't be bound".to_string(),
                     ));
                 }
                 addr
@@ -78,7 +78,7 @@ impl UdpUnderlayStack {
                 let local_address = *self.local_ip_resolver.local_ips().first().ok_or(
                     ScionSocketBindError::InvalidBindAddress(
                         SocketAddr::new(ScionAddr::new(IsdAsn(0), Ipv4Addr::UNSPECIFIED.into()), 0),
-                        "No local address found".to_string(),
+                        "no local address found".to_string(),
                     ),
                 )?;
                 let isd_as = *self
@@ -88,7 +88,7 @@ impl UdpUnderlayStack {
                     .min() // Use min to make it deterministic.
                     .ok_or(ScionSocketBindError::InvalidBindAddress(
                         SocketAddr::new(ScionAddr::new(IsdAsn(0), Ipv4Addr::UNSPECIFIED.into()), 0),
-                        "No local ISD-AS found".to_string(),
+                        "no local ISD-AS found".to_string(),
                     ))?;
                 SocketAddr::new(ScionAddr::new(isd_as, local_address.into()), 0)
             }
@@ -116,7 +116,7 @@ impl UnderlayStack for UdpUnderlayStack {
             let local_addr = underlay_socket.local_addr().map_err(|e| {
                 ScionSocketBindError::InvalidBindAddress(
                     bind_addr,
-                    format!("Failed to get local address: {e}"),
+                    format!("failed to get local address: {e}"),
                 )
             })?;
             let bind_addr = SocketAddr::new(
@@ -159,7 +159,7 @@ impl UnderlayStack for UdpUnderlayStack {
             let local_addr = underlay_socket.local_addr().map_err(|e| {
                 ScionSocketBindError::InvalidBindAddress(
                     bind_addr,
-                    format!("Failed to get local address: {e}"),
+                    format!("failed to get local address: {e}"),
                 )
             })?;
             let bind_addr = SocketAddr::new(
@@ -217,7 +217,7 @@ impl TargetAddrLocalIpResolver {
             .socket_addrs(|| None)
             .context("invalid api address")?
             .first()
-            .ok_or(anyhow::anyhow!("resolving api socket address"))?
+            .ok_or(anyhow::anyhow!("failed to resolve api socket address"))?
             .to_owned();
         Ok(Self {
             api_socket_address: socket_addr,
