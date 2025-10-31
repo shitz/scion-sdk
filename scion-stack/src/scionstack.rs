@@ -206,18 +206,17 @@ use scion_proto::{
     packet::ScionPacketRaw,
     path::Path,
 };
-pub use socket::{PathUnawareUdpScionSocket, RawScionSocket, ScmpScionSocket, UdpScionSocket};
+pub use socket::{
+    PathUnawareUdpScionSocket, RawScionSocket, ScmpScionSocket, SocketConfig, UdpScionSocket,
+};
 
 // Re-export the main types from the modules
 pub use self::builder::ScionStackBuilder;
 pub use self::scmp_handler::{DefaultScmpHandler, ScmpHandler};
-use crate::{
-    path::{
-        PathStrategy,
-        manager::{CachingPathManager, ConnectRpcSegmentFetcher, PathFetcherImpl},
-        ranking::Shortest,
-    },
-    scionstack::socket::SocketConfig,
+use crate::path::{
+    PathStrategy,
+    manager::{CachingPathManager, ConnectRpcSegmentFetcher, PathFetcherImpl},
+    ranking::Shortest,
 };
 
 /// Default duration to reserve a port when binding a socket.

@@ -327,6 +327,7 @@ pub struct SocketConfig {
     pub(crate) path_strategy: PathStrategy,
 }
 impl SocketConfig {
+    /// Creates a new default socket configuration.
     pub fn new() -> Self {
         Self::default()
     }
