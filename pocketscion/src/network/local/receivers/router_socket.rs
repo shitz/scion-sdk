@@ -56,14 +56,14 @@ impl<D: Dispatcher> RouterSocket<D> {
                     let packet = match ScionPacketRaw::decode(&mut buf[..size].as_ref()) {
                         Ok(packet) => packet,
                         Err(e) => {
-                            tracing::error!(error=%e, src=?src, "Failed to decode SCION packet");
+                            tracing::error!(error = %e, ?src, "Failed to decode SCION packet");
                             continue;
                         }
                     };
                     self.dispatcher.try_dispatch(packet);
                 }
                 Err(e) => {
-                    tracing::error!(error=%e, "Failed to receive packet");
+                    tracing::error!(error = %e, "Failed to receive packet");
                 }
             }
         }
@@ -96,7 +96,7 @@ impl<D: Dispatcher> Receiver for SharedRouterSocket<D> {
         let classified_packet = match classify_scion_packet(packet) {
             Ok(classification) => classification,
             Err(e) => {
-                tracing::error!(error=%e, "Failed to classify SCION packet");
+                tracing::error!(error = %e, "Failed to classify SCION packet");
                 return;
             }
         };
@@ -112,7 +112,7 @@ impl<D: Dispatcher> Receiver for SharedRouterSocket<D> {
         let dst_addr = match dst_addr.local_address() {
             Some(addr) => addr,
             None => {
-                tracing::error!("SVC address not supported");
+                tracing::error!("Svc address not supported");
                 return;
             }
         };
@@ -125,7 +125,7 @@ impl<D: Dispatcher> Receiver for SharedRouterSocket<D> {
         // XXX(shitz): This allocates a new buffer for each packet.
         let raw = classified_packet.encode_to_vec();
         if let Err(e) = self.0.socket.try_send_to(&raw, dst_addr) {
-            tracing::error!(error=%e, "Failed to send packet to {}", dst_addr);
+            tracing::error!(error = %e, %dst_addr, "Failed to send packet");
         }
     }
 }

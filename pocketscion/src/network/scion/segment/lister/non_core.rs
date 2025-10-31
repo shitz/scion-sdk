@@ -47,8 +47,8 @@ impl SegmentRegistry {
             ?local,
             ?src_as,
             ?dst_as,
-            "Forwarding list segments with query: {:?}",
-            query
+            query = ?query,
+            "Forwarding list segments"
         );
 
         let res: Result<Vec<&LinkSegment>, anyhow::Error> = match query {
@@ -101,11 +101,17 @@ impl SegmentRegistry {
 
         let res = res.with_context(|| format!("error satisfying query: {query:?}"))?;
 
-        tracing::info!(?local, ?src_as, ?dst_as, "resolved {} segments", res.len());
+        tracing::info!(
+            ?local,
+            ?src_as,
+            ?dst_as,
+            segment_count = res.len(),
+            "Resolved segments"
+        );
         #[cfg(debug_assertions)]
         {
             for segment in &res {
-                tracing::trace!("Segment: {}", segment);
+                tracing::trace!(%segment, "Segment details");
             }
         }
 

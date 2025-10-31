@@ -30,7 +30,7 @@ use scion_proto::{
 use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use tokio_util::sync::CancellationToken;
-use tracing::{Instrument, Span, debug, error, info, instrument, warn};
+use tracing::{Instrument, Span, instrument};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -101,7 +101,7 @@ where
                     ));
                 }
                 Err(e) => {
-                    warn!(error=%e, "Client connection was not accepted");
+                    tracing::warn!(error=%e, "Client connection was not accepted");
                 }
             }
         }
@@ -124,7 +124,7 @@ where
         let (tx, rx, ctrl) = match self.snap_tunnel_endpoint.accept_with_timeout(conn).await {
             Ok(session) => session,
             Err(e) => {
-                error!(error=%e, "Failed to accept snaptun tunnel");
+                tracing::error!(error=%e, "Failed to accept snaptun tunnel");
                 return;
             }
         };
@@ -152,10 +152,10 @@ where
             async move {
                 match ctrl.await {
                     Ok(_) => {
-                        debug!("Session control stream closed gracefully");
+                        tracing::debug!("Session control stream closed gracefully");
                     }
                     Err(e) => {
-                        error!(error=%e, "Session control stream closed with error");
+                        tracing::error!(error=%e, "Session control stream closed with error");
                     }
                 }
             }
@@ -168,7 +168,7 @@ where
         {
             for &addr in assigned_addrs.iter() {
                 self.state.add_tunnel_mapping(addr, shared_tx.clone());
-                debug!(%addr, "Added new SNAP tunnel");
+                tracing::debug!(%addr, "Added new SNAP tunnel");
             }
         }
 
@@ -185,7 +185,7 @@ where
                                         dispatcher.try_dispatch(pkt);
                                     }
                                     Err(e) => {
-                                        debug!(err=%e, "Inbound datagram check failed");
+                                        tracing::debug!(err=%e, "Inbound datagram check failed");
                                         // Use the first assigned address for the SCMP reply.
                                         Self::create_scmp_error(
                                             e,
@@ -200,11 +200,11 @@ where
                             Err(e) => {
                                 match e {
                                     snap_tun::server::ReceivePacketError::ConnectionClosed => {
-                                        info!("Connection closed by client");
+                                        tracing::info!("Connection closed by client");
                                         break;
                                     }
                                     snap_tun::server::ReceivePacketError::ConnectionError(e) => {
-                                        error!(error=%e, "Connection error");
+                                        tracing::error!(error=%e, "Connection error");
                                         break;
                                     }
                                 }
@@ -234,7 +234,7 @@ where
         let scmp_message = match create_inbound_scmp_error(err, data) {
             Ok(s) => s,
             Err(e) => {
-                error!(error=%e, "Error creating SCMP message");
+                tracing::error!(error=%e, "Error creating SCMP message");
                 return;
             }
         };
@@ -250,13 +250,13 @@ where
         let scmp_packet = match ScionPacketScmp::new(endpoint, path, scmp_message) {
             Ok(p) => p,
             Err(e) => {
-                error!(error=%e, "Error creating SCMP packet");
+                tracing::error!(error=%e, "Error creating SCMP packet");
                 return;
             }
         };
 
         if let Err(e) = tx.send(scmp_packet.encode_to_bytes_vec().concat().into()) {
-            info!(error=%e, "Error sending SCMP message");
+            tracing::info!(error=%e, "Error sending SCMP message");
         }
     }
 }

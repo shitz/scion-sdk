@@ -44,7 +44,8 @@ impl SegmentRegistry {
             ?local,
             ?src_as,
             ?dst_as,
-            "Listing Segments, Query: {query_type:?}"
+            query_type = ?query_type,
+            "Listing segments"
         );
 
         let res: Vec<&LinkSegment> = match query_type {
@@ -72,12 +73,18 @@ impl SegmentRegistry {
             }
         };
 
-        tracing::info!(?local, ?src_as, ?dst_as, "Resolved {} segments", res.len());
+        tracing::info!(
+            ?local,
+            ?src_as,
+            ?dst_as,
+            segment_count = res.len(),
+            "Resolved segments"
+        );
 
         #[cfg(debug_assertions)]
         {
             for segment in &res {
-                tracing::trace!("Segment: {}", segment);
+                tracing::trace!(%segment, "Segment details");
             }
         }
 

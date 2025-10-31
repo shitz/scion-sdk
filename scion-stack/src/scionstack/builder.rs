@@ -24,7 +24,6 @@ use scion_proto::address::{EndhostAddr, IsdAsn};
 pub use scion_sdk_reqwest_connect_rpc::client::CrpcClientError;
 use scion_sdk_reqwest_connect_rpc::token_source::TokenSource;
 use snap_control::client::{ControlPlaneApi, CrpcSnapControlClient};
-use tracing::info;
 use url::Url;
 
 use super::DynUnderlayStack;
@@ -246,7 +245,7 @@ impl ScionStackBuilder {
                     .ok_or(BuildScionStackError::UnderlayUnavailable(
                         "no snap control plane provided".into(),
                     ))?;
-                info!(%cp, "using snap underlay");
+                tracing::info!(%cp, "Using SNAP underlay");
                 // We have SNAP data planes available, construct a SNAP underlay
                 let default_scmp_handler = snap.default_scmp_handler.unwrap_or_else(|| {
                     Box::new(|tunnel| Arc::new(DefaultScmpHandler::new(tunnel)))
@@ -290,7 +289,7 @@ impl ScionStackBuilder {
                 )
             }
             DiscoveredUnderlays::Udp(data_planes) => {
-                info!(?data_planes, "using udp underlay");
+                tracing::info!(?data_planes, "Using UDP underlay");
                 let local_ip_resolver: Arc<dyn LocalIpResolver> = match udp.local_ips {
                     Some(ips) => Arc::new(ips),
                     None => {

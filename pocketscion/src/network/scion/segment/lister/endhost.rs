@@ -64,7 +64,8 @@ impl SegmentRegistry {
             ?local,
             ?src_as,
             ?dst_as,
-            "Listing segments with plan {req :?}"
+            plan = ?req,
+            "listing segments"
         );
 
         let mut res = SnapListSegmentsOutput::empty();
@@ -81,18 +82,24 @@ impl SegmentRegistry {
             res.down = self.non_core_list_segments(local, src, dst)?;
         }
 
-        tracing::debug!(?local, ?src_as, ?dst_as, "Fetched segments: {}", res);
+        tracing::debug!(
+            ?local,
+            ?src_as,
+            ?dst_as,
+            segments = %res,
+            "fetched segments"
+        );
 
         #[cfg(debug_assertions)]
         {
             for segment in &res.core {
-                tracing::trace!("Core segment: {}", segment);
+                tracing::trace!(%segment, segment_type = "Core", "Segment details");
             }
             for segment in &res.up {
-                tracing::trace!("Up segment: {}", segment);
+                tracing::trace!(%segment, segment_type = "Up", "Segment details");
             }
             for segment in &res.down {
-                tracing::trace!("Down segment: {}", segment);
+                tracing::trace!(%segment, segment_type = "Down", "Segment details");
             }
         }
 

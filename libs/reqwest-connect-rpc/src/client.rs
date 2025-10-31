@@ -19,7 +19,7 @@ use anyhow::Context as _;
 use bytes::Bytes;
 use reqwest::header::{self, HeaderMap, HeaderValue};
 use thiserror::Error;
-use tracing::{Instrument, debug};
+use tracing::Instrument;
 
 use crate::{
     error::CrpcError,
@@ -117,7 +117,7 @@ impl CrpcClient {
         Res: prost::Message + Default,
     {
         self.do_unary_request(path, req)
-            .instrument(tracing::info_span!("request", path = %path, id = rand::random::<u16>()))
+            .instrument(tracing::info_span!("request", %path, id = rand::random::<u16>()))
             .await
     }
 
@@ -152,7 +152,7 @@ impl CrpcClient {
             headers.insert(header::AUTHORIZATION, token_header);
         }
 
-        debug!("Sending request");
+        tracing::debug!("Sending request");
 
         let body = req.encode_to_vec();
         let response = self
@@ -169,7 +169,7 @@ impl CrpcClient {
                 }
             })?;
 
-        debug!(status=%response.status(), body_len=%response.content_length().unwrap_or(0), "Got response");
+        tracing::debug!(status=%response.status(), body_len=%response.content_length().unwrap_or(0), "Got response");
 
         let status = response.status();
         if !status.is_success() {

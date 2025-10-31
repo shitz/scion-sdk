@@ -27,7 +27,7 @@ use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
     trace::{DefaultOnFailure, DefaultOnResponse, MakeSpan, TraceLayer},
 };
-use tracing::{Span, debug};
+use tracing::Span;
 use tracing_appender::non_blocking::{NonBlocking, WorkerGuard};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{EnvFilter, Registry, fmt::time::UtcTime, prelude::*};
@@ -83,7 +83,7 @@ pub fn setup_tracing<P: AsRef<Path>>(log_dir: Option<P>, log_to_stderr: bool) ->
     let subscriber = Registry::default().with(layers);
     tracing::subscriber::set_global_default(subscriber).unwrap();
 
-    debug!("Logging initialized!");
+    tracing::debug!("Logging initialized!");
     guards
 }
 

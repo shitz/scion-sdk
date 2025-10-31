@@ -23,7 +23,6 @@ use scion_proto::{
     path::Path,
     scmp::ScmpMessage,
 };
-use tracing::{debug, trace};
 
 use super::{NetworkError, UnderlaySocket};
 use crate::{
@@ -96,18 +95,18 @@ impl PathUnawareUdpScionSocket {
                 let packet: ScionPacketUdp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid UDP packet, skipping");
+                        tracing::debug!(error = %e, "Received invalid UDP packet, skipping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => SocketAddr::new(source, packet.src_port()),
                     None => {
-                        debug!("Received packet without source address header, skipping");
+                        tracing::debug!("Received packet without source address header, skipping");
                         continue;
                     }
                 };
-                trace!(
+                tracing::trace!(
                     src = %src_addr,
                     length = packet.datagram.payload.len(),
                     "received packet",
@@ -146,19 +145,19 @@ impl PathUnawareUdpScionSocket {
                 let packet: ScionPacketUdp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid UDP packet, dropping");
+                        tracing::debug!(error = %e, "Received invalid UDP packet, dropping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => SocketAddr::new(source, packet.src_port()),
                     None => {
-                        debug!("Received packet without source address header, dropping");
+                        tracing::debug!("Received packet without source address header, dropping");
                         continue;
                     }
                 };
 
-                trace!(
+                tracing::trace!(
                     src = %src_addr,
                     length = packet.datagram.payload.len(),
                     buffer_size = buffer.len(),
@@ -232,14 +231,14 @@ impl ScmpScionSocket {
                 let packet: ScionPacketScmp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid SCMP packet, dropping");
+                        tracing::debug!(error = %e, "Received invalid SCMP packet, dropping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => source,
                     None => {
-                        debug!("Received packet without source address header, dropping");
+                        tracing::debug!("Received packet without source address header, dropping");
                         continue;
                     }
                 };
@@ -268,14 +267,14 @@ impl ScmpScionSocket {
                 let packet: ScionPacketScmp = match packet.try_into() {
                     Ok(packet) => packet,
                     Err(e) => {
-                        debug!(error = %e, "Received invalid SCMP packet, skipping");
+                        tracing::debug!(error = %e, "Received invalid SCMP packet, skipping");
                         continue;
                     }
                 };
                 let src_addr = match packet.headers.address.source() {
                     Some(source) => source,
                     None => {
-                        debug!("Received packet without source address header, skipping");
+                        tracing::debug!("Received packet without source address header, skipping");
                         continue;
                     }
                 };
@@ -467,11 +466,11 @@ impl<P: PathManager> UdpScionSocket<P> {
                 );
             }
             Err(e) => {
-                trace!(error = ?e, "Failed to reverse path for registration")
+                tracing::trace!(error = ?e, "Failed to reverse path for registration")
             }
         }
 
-        trace!(
+        tracing::trace!(
             src = %self.socket.local_addr(),
             dst = %sender_addr,
             "Registered reverse path",

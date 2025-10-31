@@ -137,7 +137,7 @@ impl SnapUnderlayStack {
             async move {
                 loop {
                     let path_stats = tunnel.debug_path_stats();
-                    tracing::debug!(?path_stats, "reporting snaptun path stats");
+                    tracing::debug!(?path_stats, "Reporting snaptun path stats");
                     tokio::select! {
                         _ = tokio::time::sleep(Duration::from_secs(600)) => {}
                         _ = tunnel.closed() => { return }

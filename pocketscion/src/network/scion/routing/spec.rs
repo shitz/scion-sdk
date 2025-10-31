@@ -61,7 +61,7 @@ impl RoutingLogic for SpecRoutingLogic {
                         match StandardPath::try_from(encoded_standard_path.clone()) {
                             Ok(p) => p,
                             Err(e) => {
-                                tracing::warn!("Failed to decode standard path: {e}");
+                                tracing::warn!(error = %e, "Failed to decode standard path");
                                 return Err(create_path_decode_error(scion_packet, e));
                             }
                         };
@@ -98,7 +98,7 @@ impl RoutingLogic for SpecRoutingLogic {
                     path_type,
                     bytes: _,
                 } => {
-                    tracing::warn!("Received Unsupported path type: {path_type:?}");
+                    tracing::warn!(path_type = ?path_type, "Received unsupported path type");
                     Err(scmp_parameter_problem(
                         scion_packet,
                         ParameterProblemCode::UnknownPathType,
@@ -189,7 +189,7 @@ impl SpecRoutingLogic {
 
         // We don't handle messages from local in this function
         if ingress_interface_id == 0 {
-            let msg = "Packet reached ingress function from interface id 0";
+            let msg = "Packet reached ingress function from interface ID 0";
             debug_assert!(false, "{msg}");
             tracing::warn!(msg);
             return Ok(AsRoutingAction::Drop.into());
@@ -221,7 +221,7 @@ impl SpecRoutingLogic {
             tracing::warn!(
                 expected = in_interface,
                 found = ingress_interface_id,
-                "Received packet on wrong ingress interface",
+                "Received packet on wrong ingress interface"
             );
 
             let packet = scion_packet.encode_to_bytes_vec().concat();

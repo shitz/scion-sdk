@@ -275,7 +275,7 @@ impl Path<Bytes> {
 
         let metadata = Metadata::try_from(value)
             .map_err(|e| {
-                warn!("{}", e);
+                tracing::warn!("{}", e);
                 e
             })
             .ok();

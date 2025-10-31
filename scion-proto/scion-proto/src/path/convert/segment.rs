@@ -174,7 +174,7 @@ impl TryFrom<scion_protobuf::control_plane::v1::SegmentsResponse> for Segments {
                     Err(err) => {
                         tracing::debug!(
                             ?err,
-                            "invalid segment type in SegmentsResponse, skipping..."
+                            "Invalid segment type in segments response, skipping"
                         );
                         continue;
                     }
@@ -192,9 +192,7 @@ impl TryFrom<scion_protobuf::control_plane::v1::SegmentsResponse> for Segments {
                         down_segments.push(segment);
                     }
                     scion_protobuf::control_plane::v1::SegmentType::Unspecified => {
-                        tracing::debug!(
-                            "unspecified segment type in SegmentsResponse, skipping..."
-                        );
+                        tracing::debug!("Unspecified segment type in segments response, skipping");
                         continue;
                     }
                 }

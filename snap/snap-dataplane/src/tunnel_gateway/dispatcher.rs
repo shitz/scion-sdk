@@ -21,7 +21,6 @@ use scion_sdk_token_validator::validator::Token;
 use serde::Deserialize;
 use snap_tun::server::{AddressAssignmentError, SendPacketError};
 use tokio::sync::mpsc::{Receiver, Sender, error::TrySendError};
-use tracing::{debug, info, trace};
 
 use crate::{
     dispatcher::Dispatcher,
@@ -73,7 +72,7 @@ where
                 Some(addr) => addr,
                 None => {
                     self.metrics.invalid_packets_errors.inc();
-                    debug!("Destination address couldn't be decoded.");
+                    tracing::debug!("Destination address couldn't be decoded.");
                     continue;
                 }
             };
@@ -81,7 +80,7 @@ where
                 Ok(addr) => addr,
                 Err(err) => {
                     self.metrics.invalid_packets_errors.inc();
-                    debug!(%err, "Destination address is not a valid endhost address");
+                    tracing::debug!(%err, "Destination address is not a valid endhost address");
                     continue;
                 }
             };
@@ -89,7 +88,7 @@ where
             match self.state.get_mapped_tunnel(dest_addr) {
                 Some(tun) => {
                     let raw: Bytes = packet.encode_to_bytes_vec().concat().into();
-                    trace!(remote = %tun.remote_underlay_address(), remote_virt_addr = %dest_addr, pkt_len=%raw.len(), "dispatching packet");
+                    tracing::trace!(remote = %tun.remote_underlay_address(), remote_virt_addr = %dest_addr, pkt_len=%raw.len(), "Dispatching packet");
                     if let Err(e) = tun.send(raw) {
                         match e {
                             SendPacketError::ConnectionClosed => {
@@ -110,12 +109,12 @@ where
                 _ => {
                     // No tunnel available for the destination address, drop the packet.
                     self.metrics.missing_tunnel_errors.inc();
-                    debug!(dest_addr=%dest_addr, "No tunnel mapping found for addr");
+                    tracing::debug!(addr=%dest_addr, "No tunnel mapping found for addr");
                 }
             }
         }
 
-        info!("Tunnel gateway dispatcher stopped");
+        tracing::info!("Tunnel gateway dispatcher stopped");
         Ok(())
     }
 }

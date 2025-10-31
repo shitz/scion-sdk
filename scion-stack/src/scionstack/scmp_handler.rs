@@ -20,7 +20,6 @@ use scion_proto::{
     scmp::{ScmpEchoReply, ScmpMessage},
     wire_encoding::WireEncodeVec as _,
 };
-use tracing::{debug, warn};
 
 use crate::snap_tunnel::SnapTunnel;
 
@@ -60,7 +59,7 @@ impl ScmpHandler for DefaultScmpHandler {
         Box::pin(async move {
             let reply = match p.message {
                 ScmpMessage::EchoRequest(r) => {
-                    debug!("echo request received, sending echo reply");
+                    tracing::debug!("Echo request received, sending echo reply");
                     ScmpMessage::EchoReply(ScmpEchoReply::new(
                         r.identifier,
                         r.sequence_number,
@@ -73,7 +72,7 @@ impl ScmpHandler for DefaultScmpHandler {
             let reply_path = match p.headers.reversed_path(None) {
                 Ok(path) => path.data_plane_path,
                 Err(e) => {
-                    debug!(error = %e, "error reversing path of scmp packet");
+                    tracing::debug!(error = %e, "Error reversing path of SCMP packet");
                     return;
                 }
             };
@@ -81,14 +80,14 @@ impl ScmpHandler for DefaultScmpHandler {
             let src = match p.headers.address.source() {
                 Some(src) => src,
                 None => {
-                    debug!("error decoding source address of scmp packet");
+                    tracing::debug!("Error decoding source address of SCMP packet");
                     return;
                 }
             };
             let dst = match p.headers.address.destination() {
                 Some(dst) => dst,
                 None => {
-                    debug!("error decoding destination address of scmp packet");
+                    tracing::debug!("Error decoding destination address of SCMP packet");
                     return;
                 }
             };
@@ -103,7 +102,7 @@ impl ScmpHandler for DefaultScmpHandler {
             ) {
                 Ok(packet) => packet,
                 Err(e) => {
-                    debug!(error = %e, "error encoding scmp reply");
+                    tracing::debug!(error = %e, "Error encoding SCMP reply");
                     return;
                 }
             };
@@ -113,7 +112,7 @@ impl ScmpHandler for DefaultScmpHandler {
             {
                 Ok(_) => {}
                 Err(e) => {
-                    warn!(error = %e, "error sending scmp reply");
+                    tracing::warn!(error = %e, "Error sending SCMP reply");
                 }
             }
         })

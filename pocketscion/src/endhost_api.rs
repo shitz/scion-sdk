@@ -122,7 +122,7 @@ impl PsEndhostApi {
         ps_io.set_endhost_api_addr(this_id, local_addr);
 
         // Start
-        tracing::info!(addr=%local_addr, local_ases=?state.local_ases, "Starting endhost api");
+        tracing::info!(%local_addr, local_ases = ?state.local_ases, "Starting endhost API");
         axum::serve(
             listener,
             router.layer(info_trace_layer()).into_make_service(),
@@ -178,7 +178,8 @@ impl UnderlayDiscovery for PsEndhostApiUnderlayDiscovery {
                 Some(addr) => addr,
                 None => {
                     tracing::error!(
-                        "Router {router_id} has no socket address set, cant list in endhost-api"
+                        router_id = %router_id,
+                        "Router has no socket address set, cannot list in endhost API"
                     );
                     continue;
                 }
@@ -213,7 +214,8 @@ impl UnderlayDiscovery for PsEndhostApiUnderlayDiscovery {
                 Some(addr) => addr,
                 None => {
                     tracing::warn!(
-                        "Snap {snap_id} has no socket address set, can't list in endhost-api"
+                        snap_id = %snap_id,
+                        "SNAP has no socket address set, cannot list in endhost API"
                     );
                     continue;
                 }

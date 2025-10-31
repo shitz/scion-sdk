@@ -264,12 +264,17 @@ impl RefreshTokenSourceTask {
                 match new_token {
                     // Got a new token, store it and notify waiters
                     Ok(token) => {
+                        let token_ttl_secs = token
+                            .expires_at
+                            .saturating_duration_since(Instant::now())
+                            .as_secs();
+
                         // Validate that token has a decent expiry time
                         if token.expires_at <= Instant::now() + self.min_token_lifetime {
                             tracing::error!(
-                                name=%self.name,
-                                token_ttl = ?token.expires_at.saturating_duration_since(Instant::now()),
-                                "Refreshed token is already expired or too close to expiry, ignoring",
+                                name = %self.name,
+                                token_ttl_secs,
+                                "Refreshed token is already expired or too close to expiry, ignoring"
                             );
                             // XXX(ake): Not sure if we should abort here instead?
 
@@ -279,18 +284,11 @@ impl RefreshTokenSourceTask {
                         }
 
                         fail_count = 0;
-                        let token_ttl = format!(
-                            "{}s",
-                            token
-                                .expires_at
-                                .saturating_duration_since(Instant::now())
-                                .as_secs()
-                        );
 
                         tracing::info!(
-                            name=%self.name,
-                            token_ttl,
-                            "Refreshed token",
+                            name = %self.name,
+                            token_ttl_secs,
+                            "Refreshed token"
                         );
 
                         // Store the new token and notify waiters
@@ -303,19 +301,14 @@ impl RefreshTokenSourceTask {
                     // Failed to refresh the token, log the error and retry after a delay
                     Err(e) => {
                         fail_count += 1;
-                        let token_remaining_ttl = token_expiry
-                            .saturating_duration_since(Instant::now())
-                            .as_secs();
-
-                        let token_remaining_ttl = format!("{token_remaining_ttl}s");
-                        let next_try = format!("{}s", self.refresh_retry_delay.as_secs());
 
                         tracing::error!(
-                            token_remaining_ttl,
-                            next_try,
+                            name = %self.name,
+                            ttl_secs = token_expiry.saturating_duration_since(Instant::now()).as_secs(),
+                            retry_secs = self.refresh_retry_delay.as_secs(),
                             fail_count,
-                            name= %self.name,
-                            "Failed to refresh token: {e}",
+                            error = %e,
+                            "Failed to refresh token"
                         );
 
                         // If the current token is still valid, keep it, otherwise store the error

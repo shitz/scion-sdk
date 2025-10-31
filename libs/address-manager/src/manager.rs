@@ -180,7 +180,8 @@ impl AddressManager {
             if removed.endhost_address != endhost_address {
                 if let Err(e) = self.free_ips.free(removed.endhost_address.local_address()) {
                     tracing::error!(
-                        "Allocator did not contain ip from removed entry - this should not happen: {e}"
+                        error = %e,
+                        "Allocator did not contain IP from removed entry - this should not happen"
                     )
                 };
             };
@@ -215,7 +216,8 @@ impl AddressManager {
             Some(removed) => {
                 if let Err(e) = self.free_ips.free(removed.endhost_address.local_address()) {
                     tracing::warn!(
-                        "Address allocator did not contain an existing address grant - this should never happen: {e}"
+                        error = %e,
+                        "Address allocator did not contain an existing address grant - this should never happen"
                     );
                 };
 

@@ -59,7 +59,7 @@ impl NetworkSimulator<'_> {
             let _s = info_span!("net-sim", local = %local_as).entered();
 
             // Simulate routing
-            tracing::trace!("Dispatching packet at AS {}", local_as);
+            tracing::trace!(%local_as, "Dispatching packet at AS");
             let routing_output = match self.topology {
                 Some(topology) => {
                     ScionNetworkSim::simulate_traversal::<SpecRoutingLogic>(
@@ -107,7 +107,7 @@ impl NetworkSimulator<'_> {
         match fallible() {
             Ok(_) => {}
             Err(e) => {
-                tracing::error!("Failed to dispatch packet: {:?}", e);
+                tracing::error!(error = ?e, "Failed to dispatch packet");
             }
         }
     }

@@ -18,7 +18,6 @@ use std::sync::{Arc, atomic::AtomicBool};
 use axum::Router;
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
-use tracing::{error, info};
 use utoipa_redoc::{Redoc, Servable};
 
 use super::api::admin;
@@ -43,9 +42,9 @@ pub async fn start(
         .with_graceful_shutdown(cancellation_token.cancelled_owned())
         .await
     {
-        error!(error=%e, "Management API server unexpectedly stopped");
+        tracing::error!(error=%e, "Management API server unexpectedly stopped");
     }
 
-    info!("Shutting down Management API server");
+    tracing::info!("Shutting down Management API server");
     Ok(())
 }

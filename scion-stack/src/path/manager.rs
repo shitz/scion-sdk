@@ -49,7 +49,7 @@ use scion_proto::{
 use thiserror::Error;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{error, instrument};
 
 use crate::{
     path::{PathStrategy, types::PathManagerPath},
@@ -271,7 +271,7 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManager<F> {
 
     fn prefetch_path_internal(&self, src: IsdAsn, dst: IsdAsn, now: DateTime<Utc>) {
         if let Err(e) = self.prefetch_tx.try_send(PrefetchRequest { src, dst, now }) {
-            warn!(err=?e, "Prefetch path channel send failed");
+            tracing::warn!(err=?e, "Prefetch path channel send failed");
         }
     }
 
@@ -288,7 +288,7 @@ impl<F: PathFetcher + Send + Sync + 'static> CachingPathManager<F> {
             now,
             path,
         }) {
-            warn!(err=?e, "Register path channel send failed");
+            tracing::warn!(err=?e, "Register path channel send failed");
         }
     }
 }
@@ -500,13 +500,13 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
     }
 
     async fn run(mut self) {
-        trace!("Starting active path manager task");
+        tracing::trace!("Starting active path manager task");
 
         loop {
             tokio::select! {
                 // Handle cancellation with highest priority
                 _ = self.cancellation_token.cancelled() => {
-                    info!("Path manager task cancelled");
+                    tracing::info!("Path manager task cancelled");
                     break;
                 }
 
@@ -517,7 +517,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                             self.handle_registration(reg).await;
                         }
                         None => {
-                            info!("Registration channel closed");
+                            tracing::info!("Registration channel closed");
                             break;
                         }
                     }
@@ -530,7 +530,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                             self.handle_prefetch(req).await;
                         }
                         None => {
-                            info!("Prefetch channel closed");
+                            tracing::info!("Prefetch channel closed");
                             break;
                         }
                     }
@@ -538,11 +538,11 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             }
         }
 
-        info!("Path manager task finished");
+        tracing::info!("Path manager task finished");
     }
 
     async fn handle_registration(&self, registration: PathRegistration) {
-        trace!(
+        tracing::trace!(
             src = %registration.src,
             dst = %registration.dst,
             "Handling path registration"
@@ -552,7 +552,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
 
         // Check if the path is accepted by the policy
         if !self.state.selection.predicate(&new_path) {
-            debug!(
+            tracing::debug!(
                 src = %registration.src,
                 dst = %registration.dst,
                 "Registered path rejected by policy"
@@ -573,7 +573,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
                     // or if the new path is preferred (Ordering::Less means new_path is preferred)
                     || self.state.selection.rank_order(&new_path, &entry.path) == Ordering::Less
                 {
-                    info!(
+                    tracing::info!(
                         src = %registration.src,
                         dst = %registration.dst,
                         "Updating active path"
@@ -592,7 +592,7 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
     /// Otherwise, it fetches the path and caches it.
     #[instrument(name = "prefetch", fields(src = %request.src, dst = %request.dst), skip_all)]
     async fn handle_prefetch(&self, request: PrefetchRequest) {
-        debug!("Handling prefetch request");
+        tracing::debug!("Handling prefetch request");
 
         // Check if we already have a valid cached path
         if self
@@ -601,13 +601,13 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             .await
             .is_some()
         {
-            debug!("Path already cached, skipping prefetch");
+            tracing::debug!("Path already cached, skipping prefetch");
             return;
         }
 
         // Check if there is an in-flight request for the same source and destination
         if self.state.request_inflight(request.src, request.dst) {
-            debug!("Path request already in flight, skipping prefetch");
+            tracing::debug!("Path request already in flight, skipping prefetch");
             return;
         }
 
@@ -620,10 +620,10 @@ impl<F: PathFetcher + Send + Sync + 'static> PathManagerTask<F> {
             .await
         {
             Ok(_) => {
-                debug!("Successfully prefetched path");
+                tracing::debug!("Successfully prefetched path");
             }
             Err(e) => {
-                warn!(
+                tracing::warn!(
                     error = %e,
                     "Failed to prefetch path"
                 );
@@ -676,7 +676,7 @@ impl SegmentFetcher for ConnectRpcSegmentFetcher {
             .list_segments(src, dst, 128, "".to_string())
             .await?;
 
-        debug!(
+        tracing::debug!(
             n_core=resp.core_segments.len(),
             n_up=resp.up_segments.len(),
             n_down=resp.down_segments.len(),
@@ -716,7 +716,7 @@ impl<L: SegmentFetcher + Send + Sync> PathFetcher for PathFetcherImpl<L> {
             non_core_segments,
         } = self.segment_fetcher.fetch_segments(src, dst).await?;
 
-        trace!(
+        tracing::trace!(
             n_core_segments = core_segments.len(),
             n_non_core_segments = non_core_segments.len(),
             src = %src,

@@ -94,7 +94,7 @@ impl PathDiscovery for StateEndhostSegmentLister {
         let resolved = match segments.endhost_list_segments(*local_as, src, dst) {
             Ok(segments) => segments,
             Err(e) => {
-                tracing::error!("Failed to resolve segments: {}", e);
+                tracing::error!(error = %e, "Failed to resolve segments");
                 return Err(SegmentsError::InternalError(e.to_string()));
             }
         };
@@ -113,7 +113,7 @@ impl PathDiscovery for StateEndhostSegmentLister {
                 255,
             )
             .map_err(|e| {
-                tracing::error!("Failed to convert segments: {}", e);
+                tracing::error!(error = %e, "Failed to convert segments");
                 SegmentsError::InternalError(e.to_string())
             })?;
 

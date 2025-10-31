@@ -38,7 +38,6 @@ use snap_dataplane::{
 };
 use thiserror::Error;
 use tokio::{net::TcpListener, time::sleep};
-use tracing::{debug, info};
 
 use crate::{
     addr_to_http_url,
@@ -154,7 +153,7 @@ impl PocketScionRuntimeBuilder {
                     })?
                 }
                 None => {
-                    debug!(snap=%snap_id, "No control plane API port for SNAP specified");
+                    tracing::debug!(snap=%snap_id, "No control plane API port for SNAP specified");
                     let listener =
                         TcpListener::bind(&SocketAddr::from((Ipv4Addr::LOCALHOST, 0))).await?;
                     io_config.set_snap_control_addr(snap_id, listener.local_addr()?);
@@ -219,7 +218,7 @@ impl PocketScionRuntimeBuilder {
                 let server_endpoint = match io_config.snap_data_plane_addr(snap_dp_id) {
                     Some(addr) => quinn::Endpoint::server(server_config, addr)?,
                     None => {
-                        debug!(data_plane_id=%snap_dp_id, "No listen address specified for SNAP data plane");
+                        tracing::debug!(data_plane_id=%snap_dp_id, "No listen address specified for SNAP data plane");
                         let server_endpoint = quinn::Endpoint::server(
                             server_config,
                             SocketAddr::from((Ipv4Addr::LOCALHOST, 0)),
@@ -316,7 +315,7 @@ impl PocketScionRuntimeBuilder {
             .await?;
             let listen_address = listener.local_addr()?;
 
-            info!(addr=%listen_address, "Starting management API");
+            tracing::info!(addr=%listen_address, "Starting management API");
 
             task_set.join_set.spawn(async move {
                 management_api::start(token, ready_state_clone, system_state, io_config, listener)
@@ -404,7 +403,7 @@ impl PocketScionRuntime {
                 Err(e) => PocketScionRuntimeError::ClientError(e),
             };
 
-            debug!("waiting for Pocket SCION to be ready: {:?}", err);
+            tracing::debug!("Waiting for Pocket SCION to be ready: {:?}", err);
             sleep(ATTEMPT_WAIT).await;
         }
         Err(err)

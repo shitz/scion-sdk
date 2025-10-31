@@ -40,7 +40,7 @@ impl TopologyLinkVisitor for CoreSegmentCollector {
                 .add_link(*current_as, link.clone(), true)
                 .inspect_err(|e| {
                     debug_assert!(false, "Should never fail to add hop to segment");
-                    tracing::error!("Failed to add hop to segment in CorePathAggregator: {}", e);
+                    tracing::error!(error = %e, "Failed to add hop to segment in core path aggregator");
                 });
         }
     }
@@ -71,7 +71,7 @@ impl TopologyLinkVisitor for DownSegmentCollector {
                 .add_link(*current_as, link.clone(), true)
                 .inspect_err(|e| {
                     debug_assert!(false, "Should never fail to add hop to links");
-                    tracing::error!("Failed to add hop to links in DownSegmentCollector: {}", e);
+                    tracing::error!(error = %e, "Failed to add hop to links in down segment collector");
                 });
         }
     }
@@ -87,9 +87,9 @@ impl TopologyLinkVisitor for DownSegmentCollector {
             Some(ScionLinkType::Parent) => true,
             None => {
                 tracing::warn!(
-                    "Link type for link {} in AS {} is None, this should not happen.",
-                    next_link.id,
-                    current_as.isd_as
+                    link_id = %next_link.id,
+                    isd_as = %current_as.isd_as,
+                    "Link type for link in AS is none, this should not happen"
                 );
 
                 false

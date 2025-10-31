@@ -27,7 +27,6 @@ use pem::Pem;
 use serde::{Deserialize, Serialize};
 use snap_tokens::{Pssid, snap_token::SnapTokenClaims};
 use thiserror::Error;
-use tracing::debug;
 use uuid::Uuid;
 
 use super::{
@@ -228,15 +227,15 @@ impl TokenExchangeImpl {
 
 impl TokenExchange for TokenExchangeImpl {
     fn exchange(&mut self, req: TokenRequest) -> Result<TokenResponse, TokenExchangeError> {
-        debug!(request=?req, "Received token exchange request");
+        tracing::debug!(request=?req, "Received token exchange request");
 
         if req.grant_type != TOKEN_EXCHANGE_GRANT_TYPE {
-            debug!(grant_type=%req.grant_type, "Invalid grant type");
+            tracing::debug!(grant_type=%req.grant_type, "Invalid grant type");
             return Err(TokenExchangeError::InvalidGrantType(req.grant_type));
         }
 
         if req.subject_token_type != ID_TOKEN_TYPE {
-            debug!(subject_token_type=%req.subject_token_type, "Unsupported subject token type");
+            tracing::debug!(subject_token_type=%req.subject_token_type, "Unsupported subject token type");
             return Err(TokenExchangeError::InvalidSubjectTokenType(
                 req.subject_token_type,
             ));
@@ -252,7 +251,7 @@ impl TokenExchange for TokenExchangeImpl {
         let decoded_token =
             decode::<OpenIdToken>(id_token, &DecodingKey::from_secret(b""), &validator)?;
 
-        debug!(token=?decoded_token, "exchanging token");
+        tracing::debug!(token=?decoded_token, "Exchanging token");
 
         let verified_id_token = match decoded_token.claims.iss.as_str() {
             FAKE_IDP_ISSUER => self.config.fake_idp.verify_id_token(id_token)?,

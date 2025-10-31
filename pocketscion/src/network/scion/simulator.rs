@@ -516,8 +516,8 @@ mod tests {
                 interface_link_type_lookup(ingress_interface_id + 1) // For mock - Egress must be one higher than ingress
                     .ok_or_else(|| {
                         tracing::warn!(
-                            "No link type found for interface ID {}",
-                            ingress_interface_id
+                            interface_id = ingress_interface_id,
+                            "No link type found for interface ID"
                         );
                         ScmpErrorMessage::ParameterProblem(
                             ScmpParameterProblem::new(

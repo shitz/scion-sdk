@@ -30,7 +30,7 @@ use tokio::{
         oneshot,
     },
 };
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{error, instrument};
 
 use crate::scionstack::{ScionSocketBindError, SocketKind};
 
@@ -144,7 +144,7 @@ impl DemultiplexerState {
                     }
                 }
                 Err(TrySendError::Full(_)) => {
-                    warn!("SocketDriver control channel is full, this is likely a bug");
+                    tracing::warn!("SocketDriver control channel is full, this is likely a bug");
 
                     return Err(ScionSocketBindError::Internal(
                         "SocketDriver control channel is full, this should never happen"
@@ -291,14 +291,14 @@ impl SocketDriver {
                             _ = tx.send(self.receivers.register(key, sender));
                         }
                         None => {
-                            debug!("Demultiplexer control channel closed, shutting down socket driver");
+                            tracing::debug!("Demultiplexer control channel closed, shutting down socket driver");
                             break;
                         }
                     }
                 }
                 _ = self.receivers.all_closed() => {
                     // If all senders are closed, the socket driver is done.
-                    debug!("All socket senders closed, shutting down socket driver");
+                    tracing::debug!("All socket senders closed, shutting down socket driver");
                     break;
                 }
                 result = self.underlay_socket.recv(&mut recv_buffer) => {
@@ -308,8 +308,8 @@ impl SocketDriver {
                             self.handle_recv(&mut bytes_mut);
                         }
                         Err(e) => {
-                            error!("Error receiving datagram: {}", e);
-                            debug!("Underlay socket errored, shutting down socket driver");
+                            tracing::error!("Error receiving datagram: {}", e);
+                            tracing::debug!("Underlay socket errored, shutting down socket driver");
                             break;
                         }
                     }
@@ -317,14 +317,14 @@ impl SocketDriver {
             }
         }
 
-        info!("Socket driver shut down");
+        tracing::info!("Socket driver shut down");
     }
 
     fn handle_recv(&mut self, raw_data: &mut BytesMut) {
         let packet = match ScionPacketRaw::decode(raw_data) {
             Ok(packet) => packet,
             Err(e) => {
-                debug!(error = %e, "Failed to decode SCION packet");
+                tracing::debug!(error = %e, "Failed to decode SCION packet");
                 return;
             }
         };
@@ -333,7 +333,7 @@ impl SocketDriver {
         match packet.headers.address.destination() {
             Some(dst) => {
                 if dst.host() != self.host_bind_addr.ip().into() {
-                    debug!(
+                    tracing::debug!(
                         src=%packet.headers.address.ia.source,
                         dst=%dst,
                         expected=%self.host_bind_addr.ip(),
@@ -343,7 +343,7 @@ impl SocketDriver {
                 }
             }
             None => {
-                debug!(
+                tracing::debug!(
                     src=%packet.headers.address.ia.source,
                     dst=%packet.headers.address.ia.destination,
                     "Dropping packet with invalid destination address",
@@ -401,7 +401,7 @@ impl Receivers {
                         self.map.remove(&key);
                     }
                     Err(TrySendError::Full(_)) => {
-                        warn!("Receive channel is full, dropping packet");
+                        tracing::warn!("Receive channel is full, dropping packet");
                     }
                 }
             };
@@ -418,7 +418,7 @@ impl Receivers {
                 send_to(raw_key, sb, packet);
             }
             (None, None) => {
-                error!("No receivers registered for packet");
+                tracing::error!("No receivers registered for packet");
             }
         }
     }
@@ -456,7 +456,7 @@ impl Receivers {
                 match sender.try_send(raw_packet) {
                     Ok(_) => (),
                     Err(TrySendError::Full(_)) => {
-                        warn!("Receive channel is full, dropping packet");
+                        tracing::warn!("Receive channel is full, dropping packet");
                     }
                     Err(TrySendError::Closed(_)) => {
                         self.map.remove(&key);
@@ -464,7 +464,7 @@ impl Receivers {
                 }
             }
             None => {
-                warn!("No receivers registered for packet");
+                tracing::warn!("No receivers registered for packet");
             }
         }
     }

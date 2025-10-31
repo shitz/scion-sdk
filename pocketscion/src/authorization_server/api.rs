@@ -22,7 +22,6 @@ use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 use tokio_util::sync::CancellationToken;
 use tower::ServiceBuilder;
-use tracing::{debug, error, info};
 use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 use utoipa_redoc::{Redoc, Servable};
@@ -86,7 +85,7 @@ pub(crate) async fn start(
             })?
         }
         None => {
-            debug!("No authorization server API address specified");
+            tracing::debug!("No authorization server API address specified");
             let listener = TcpListener::bind(&SocketAddr::from((Ipv4Addr::LOCALHOST, 0))).await?;
             io_config.set_auth_server_addr(listener.local_addr()?);
             listener
@@ -104,17 +103,17 @@ pub(crate) async fn start(
         .nest("/api/v1", router)
         .merge(Redoc::with_url("/docs", openapi));
 
-    info!(addr=?listener.local_addr(), "Starting authorization server API");
+    tracing::info!(addr=?listener.local_addr(), "Starting authorization server API");
     if let Err(e) = axum::serve(listener, final_router.into_make_service())
         .with_graceful_shutdown(async move {
             cancellation_token.cancelled().await;
         })
         .await
     {
-        error!(error=%e, "Authorization server unexpectedly stopped");
+        tracing::error!(error=%e, "Authorization server unexpectedly stopped");
     }
 
-    info!("Shutting down auhtorization server");
+    tracing::info!("Shutting down auhtorization server");
     Ok(())
 }
 
@@ -256,7 +255,7 @@ async fn post_token(
 }
 
 fn handle_token_exchange_error(error: TokenExchangeError) -> impl IntoResponse {
-    debug!(err = %error, "token exchange failed");
+    tracing::debug!(err = %error, "Token exchange failed");
 
     let (error_type, error_description) = match error {
         TokenExchangeError::InvalidGrantType(grant_type) => {

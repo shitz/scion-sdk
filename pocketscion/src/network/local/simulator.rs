@@ -64,7 +64,7 @@ impl LocalNetworkSimulation<'_> {
     ///
     /// Reads destination from packet.
     pub fn dispatch(&self, packet: ScionPacketRaw) -> Result<(), ScmpErrorMessage> {
-        tracing::trace!("Dispatching packet into AS {}", self.local_as);
+        tracing::trace!(local_as = %self.local_as, "Dispatching packet into AS");
         // Get Dest Addr
         let Some(dest_ip) = packet.headers.address.destination() else {
             tracing::warn!("No local address found in packet destination, cannot dispatch");
@@ -78,9 +78,9 @@ impl LocalNetworkSimulation<'_> {
         // Can't handle if non local
         if dest_ip.isd_asn() != self.local_as {
             tracing::warn!(
-                "Packet destination AS {} does not match local AS {}, cannot dispatch",
-                dest_ip.isd_asn(),
-                self.local_as
+                dest_as = %dest_ip.isd_asn(),
+                local_as = %self.local_as,
+                "Packet destination AS does not match local AS, cannot dispatch"
             );
 
             return Err(ScmpParameterProblem::new(
@@ -95,7 +95,7 @@ impl LocalNetworkSimulation<'_> {
         self.receivers
             .by_addr(dest_ip)
             .ok_or_else(|| {
-                tracing::warn!("No dispatcher found for {dest_ip}");
+                tracing::warn!(%dest_ip, "No dispatcher found");
                 ScmpDestinationUnreachable::new(
                     DestinationUnreachableCode::AddressUnreachable,
                     packet.encode_to_bytes_vec().concat().into(),
@@ -168,9 +168,9 @@ impl LocalNetworkSimulation<'_> {
         }
 
         // Packet comes from this AS, dispatch
-        let _ = self.dispatch(scmp_reply.into()).inspect_err(|e| {
-            tracing::warn!("error dispatching SCMP back into AS: {}", e.to_string())
-        });
+        let _ = self
+            .dispatch(scmp_reply.into())
+            .inspect_err(|e| tracing::warn!(error = %e, "Error dispatching SCMP back into AS"));
 
         Ok(None) // Handling complete
     }
@@ -197,7 +197,7 @@ impl LocalNetworkSimulation<'_> {
 
         match &request.message {
             ScmpMessage::EchoRequest(scmp_echo_request) => {
-                tracing::trace!("Handling SCMP EchoRequest");
+                tracing::trace!("Handling SCMP echo request");
                 maybe_create_scmp_reply(
                     self.local_as,
                     ScmpMessage::EchoReply(ScmpEchoReply::new(
@@ -209,7 +209,7 @@ impl LocalNetworkSimulation<'_> {
                 )
             }
             ScmpMessage::TracerouteRequest(scmp_traceroute_request) => {
-                tracing::trace!("Handling SCMP TracerouteRequest");
+                tracing::trace!("Handling SCMP traceroute request");
                 maybe_create_scmp_reply(
                     self.local_as,
                     ScmpMessage::TracerouteReply(ScmpTracerouteReply::new(
@@ -222,7 +222,7 @@ impl LocalNetworkSimulation<'_> {
                 )
             }
             _ => {
-                tracing::warn!("Received unexpected SCMP message {:?}", request.message);
+                tracing::warn!(message = ?request.message, "Received unexpected SCMP message");
 
                 bail!("Unexpected SCMP message");
             }

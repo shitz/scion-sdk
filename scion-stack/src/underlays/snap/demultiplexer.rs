@@ -27,7 +27,6 @@ use tokio::{
     sync::mpsc::{Sender, error::TrySendError},
     time,
 };
-use tracing::{debug, error, info, trace, warn};
 
 use crate::{scionstack::ScmpHandler, snap_tunnel::SnapTunnel};
 
@@ -52,7 +51,7 @@ impl DemultiplexerHandle {
         addr: SocketAddr,
         sender: Sender<ScionPacketRaw>,
     ) -> Result<(), RegistrationError> {
-        trace!(%addr, "registering scmp handler");
+        tracing::trace!(%addr, "Registering SCMP handler");
         self.handle
             .upgrade()
             .ok_or(RegistrationError::ConnectionClosed)?
@@ -67,7 +66,7 @@ impl DemultiplexerHandle {
         addr: SocketAddr,
         sender: Sender<ScionPacketRaw>,
     ) -> Result<(), RegistrationError> {
-        trace!(%addr, "registering udp handler");
+        tracing::trace!(%addr, "Registering UDP handler");
         self.handle
             .upgrade()
             .ok_or(RegistrationError::ConnectionClosed)?
@@ -82,7 +81,7 @@ impl DemultiplexerHandle {
         addr: SocketAddr,
         sender: Sender<ScionPacketRaw>,
     ) -> Result<(), RegistrationError> {
-        trace!(%addr, "registering raw handler");
+        tracing::trace!(%addr, "Registering raw handler");
         self.handle
             .upgrade()
             .ok_or(RegistrationError::ConnectionClosed)?
@@ -179,7 +178,7 @@ impl DemultiplexerHost {
                         Err(err) => {
                             // TODO: this error never bubbles up and is never properly handled, it
                             // just stops the main loop
-                            error!(%err, "Failed to receive datagram");
+                            tracing::error!(%err, "Failed to receive datagram");
                             break;
                         }
                     }
@@ -190,14 +189,14 @@ impl DemultiplexerHost {
             }
         }
 
-        info!("SNAP underlay demultiplexer exiting")
+        tracing::info!("SNAP underlay demultiplexer exiting")
     }
 
     async fn dispatch_packet(&mut self, mut raw_data: Bytes) {
         let packet = match ScionPacketRaw::decode(&mut raw_data) {
             Ok(packet) => packet,
             Err(e) => {
-                debug!(error = %e, "Failed to decode SCION packet, dropping");
+                tracing::debug!(error = %e, "Failed to decode SCION packet, dropping");
                 return;
             }
         };
@@ -205,7 +204,7 @@ impl DemultiplexerHost {
         let classified_packet = match classify_scion_packet(packet) {
             Ok(packet) => packet,
             Err(e) => {
-                debug!(error = %e, "Failed to classify SCION packet, dropping");
+                tracing::debug!(error = %e, "Failed to classify SCION packet, dropping");
                 // TODO: increment counter for malformed packets
                 return;
             }
@@ -223,7 +222,7 @@ impl DemultiplexerHost {
             }
             PacketClassification::Other(raw_packet) => {
                 // TODO: increment counter for unknown protocols
-                debug!(
+                tracing::debug!(
                     proto_id = %raw_packet.headers.common.next_header,
                     "Received SCION packet with unknown protocol, dropping",
                 );
@@ -235,7 +234,7 @@ impl DemultiplexerHost {
         let dst_addr: SocketAddr = match dst_addr {
             Some(addr) => addr,
             _ => {
-                debug!("Received UDP packet without valid destination address, dropping");
+                tracing::debug!("Received UDP packet without valid destination address, dropping");
                 return;
             }
         };
@@ -309,13 +308,13 @@ impl<P: 'static> Dispatcher<P> {
         if let Some(entry) = self.0.get_sync(&addr) {
             match entry.try_send(packet) {
                 Ok(_) => {
-                    trace!(addr=%addr, "dispatched packet to receiver");
+                    tracing::trace!(addr=%addr, "Dispatched packet to receiver");
                 }
                 Err(TrySendError::Closed(_)) => {
                     let _ = entry.remove();
                 }
                 Err(TrySendError::Full(_)) => {
-                    warn!(addr=%addr, "receive channel is full, dropping packet");
+                    tracing::warn!(addr=%addr, "Receive channel is full, dropping packet");
                 }
             }
         }

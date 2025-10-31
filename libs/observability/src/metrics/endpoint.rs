@@ -33,7 +33,6 @@ use tower::{
     load_shed::error::Overloaded,
     timeout::{TimeoutLayer, error::Elapsed},
 };
-use tracing::{error, info};
 
 use crate::metrics::registry::MetricsRegistry;
 
@@ -79,14 +78,14 @@ pub async fn start(
         .with_state((metrics_registry.clone(), metrics.clone()))
         .into_make_service();
 
-    info!(addr=?listener.local_addr(), "starting metrics endpoint");
+    tracing::info!(addr=?listener.local_addr(), "Starting metrics endpoint");
     if let Err(e) = axum::serve(listener, metrics_service)
         .with_graceful_shutdown(cancellation_token.cancelled_owned())
         .await
     {
-        error!(error=%e, "Metrics endpoint server unexpectedly stopped");
+        tracing::error!(err=%e, "Metrics endpoint server unexpectedly stopped");
     } else {
-        info!("Metrics endpoint server stopped gracefully");
+        tracing::info!("Metrics endpoint server stopped gracefully");
     }
     Ok(())
 }

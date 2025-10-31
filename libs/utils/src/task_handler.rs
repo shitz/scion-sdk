@@ -15,7 +15,6 @@
 
 use tokio::{process::Child, task::JoinSet};
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, error};
 
 /// A in-process task set that is cancelled when dropped.
 pub struct InProcess {
@@ -122,15 +121,15 @@ impl CancelTaskSet {
                     signal(SignalKind::terminate()).expect("failed to register SIGTERM handler");
                 tokio::select! {
                     _ = sigint.recv() => {
-                        debug!("Received SIGINT, cancelling token");
+                        tracing::debug!("Received SIGINT, cancelling token");
                         cancellation_token.cancel();
                     },
                     _ = sigterm.recv() => {
-                        debug!("Received SIGTERM, cancelling token");
+                        tracing::debug!("Received SIGTERM, cancelling token");
                         cancellation_token.cancel();
                     },
                     _ = cancellation_token.cancelled() => {
-                        debug!("Cancellation token cancelled, exiting shutdown handler");
+                        tracing::debug!("Cancellation token cancelled, exiting shutdown handler");
                     },
                 }
             }
@@ -145,15 +144,15 @@ impl CancelTaskSet {
 
                 tokio::select! {
                     _ = ctrl_c.recv() => {
-                        debug!("Received CTRL-C, cancelling token");
+                        tracing::debug!("Received CTRL-C, cancelling token");
                         cancellation_token.cancel();
                     },
                     _ = ctrl_break.recv() => {
-                        debug!("Received CTRL-BREAK, cancelling token");
+                        tracing::debug!("Received CTRL-BREAK, cancelling token");
                         cancellation_token.cancel();
                     },
                     _ = cancellation_token.cancelled() => {
-                        debug!("Cancellation token cancelled, exiting shutdown handler");
+                        tracing::debug!("Cancellation token cancelled, exiting shutdown handler");
                     },
                 }
             }
@@ -184,11 +183,11 @@ impl CancelTaskSet {
             match result {
                 Ok(Ok(())) => {} // Task completed successfully
                 Ok(Err(e)) => {
-                    error!(error=%e, "Task failed");
+                    tracing::error!(error=%e, "Task failed");
                     self.cancellation_token.cancel();
                 }
                 Err(e) => {
-                    error!(error=%e, "Task join failed");
+                    tracing::error!(error=%e, "Task join failed");
                     self.cancellation_token.cancel();
                 }
             }

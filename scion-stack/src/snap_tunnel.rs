@@ -23,7 +23,7 @@ use snap_control::{client::ControlPlaneApi, crpc_api::api_service::model::Sessio
 use snap_tun::client::{
     AutoSessionRenewal, DEFAULT_RENEWAL_WAIT_THRESHOLD, SnapTunError, TokenRenewError,
 };
-use tracing::{debug, instrument};
+use tracing::instrument;
 
 /// Default SNAP data plane session token renewer.
 pub struct DefaultTokenRenewer {
@@ -152,7 +152,7 @@ impl SnapTunnel {
 
         let (sender, receiver, ctrl) = client_builder.connect(conn).await?;
 
-        debug!(
+        tracing::debug!(
             addr=%ctrl.assigned_addresses().iter().map(|a| a.to_string()).collect::<Vec<String>>().join(", "),
             "Snap tunnel established.",
         );

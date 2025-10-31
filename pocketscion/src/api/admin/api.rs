@@ -25,7 +25,6 @@ use scion_proto::address::IsdAsn;
 use scion_sdk_observability::info_trace_layer;
 use serde::{Deserialize, Serialize};
 use tower::ServiceBuilder;
-use tracing::error;
 use url::Url;
 use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
@@ -169,7 +168,7 @@ async fn get_snaps(
                 );
             }
             None => {
-                error!(snap=%snap_id, "No control plane API port for SNAP in I/O config");
+                tracing::error!(snap=%snap_id, "No control plane API port for SNAP in I/O config");
             }
         }
     });
@@ -286,7 +285,7 @@ async fn get_endhost_apis(
                 );
             }
             None => {
-                error!(%id, "No Endhost API address in I/O config, cant list");
+                tracing::error!(%id, "No Endhost API address in I/O config, cant list");
             }
         }
     }

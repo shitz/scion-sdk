@@ -25,7 +25,7 @@ use arc_swap::ArcSwap;
 use endhost_api_client::client::EndhostApiClient;
 use scion_proto::address::IsdAsn;
 use tokio::task::JoinHandle;
-use tracing::{debug, error};
+use tracing::error;
 
 /// UDP underlay resolver.
 pub struct UdpUnderlayResolver {
@@ -108,7 +108,7 @@ impl PeriodicUnderlayNextHopResolverState {
     async fn run(self: Arc<Self>) {
         loop {
             if let Err(e) = self.update_next_hops().await {
-                error!(err = ?e, "Failed to update underlay next hops");
+                tracing::error!(err = ?e, "Failed to update underlay next hops");
             }
             tokio::time::sleep(self.fetch_interval).await;
         }
@@ -121,9 +121,9 @@ impl PeriodicUnderlayNextHopResolverState {
             .await
             .context("error listing data planes")?;
 
-        debug!(
-            "Fetched {} underlay dataplanes",
-            dataplanes.udp_underlay.len()
+        tracing::debug!(
+            found = %dataplanes.udp_underlay.len(),
+            "Fetched underlay dataplanes"
         );
 
         let mut next_hops = HashMap::new();

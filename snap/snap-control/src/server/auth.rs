@@ -28,7 +28,6 @@ use scion_sdk_token_validator::validator::{TokenValidator, Validator};
 use snap_tokens::snap_token::SnapTokenClaims;
 use thiserror::Error;
 use tower::{BoxError, Layer, Service};
-use tracing::debug;
 
 #[derive(Clone)]
 pub(crate) struct AuthMiddlewareLayer {
@@ -81,7 +80,7 @@ where
         let token = match extract_bearer_token(&request) {
             Ok(token) => token,
             Err(err) => {
-                debug!(error=%err, "extract bearer token");
+                tracing::debug!(%err, "Extract bearer token");
                 return Box::pin(async { Ok(build_unauthorized_response(err)) });
             }
         };
@@ -93,7 +92,7 @@ where
                 Box::pin(async move { inner.call(request).await.map_err(Into::into) })
             }
             Err(err) => {
-                debug!(error=%err, "Invalid Token");
+                tracing::debug!(%err, "Invalid Token");
                 Box::pin(async { Ok(build_unauthorized_response(err)) })
             }
         }
