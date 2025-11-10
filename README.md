@@ -18,16 +18,16 @@ technology company. We thank our colleagues at [Mysten Labs](https://mystenlabs.
 
 ## Usage
 
+The main entry point for using the SCION endhost SDK is the [scion-stack](scion-stack/) crate. It
+provides the `ScionStack` type - a stateful object that is the conceptual equivalent of the
+UDP/TCP/IP networking stack found in typical operating systems.
+
 To use the SCION endhost SDK in your Rust project, add the `scion-stack` crate as a dependency in
 your `Cargo.toml`:
 
 ```bash
 cargo add scion-stack
 ```
-
-The main entry point for using the SCION endhost SDK is the [scion-stack](scion-stack/) crate. It
-provides the `ScionStack` type - a stateful object that is the conceptual equivalent of the
-UDP/TCP/IP networking stack found in typical operating systems.
 
 ### Basic example: Creating a path-aware socket
 
